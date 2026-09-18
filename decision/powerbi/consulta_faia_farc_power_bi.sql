@@ -2,6 +2,17 @@ USE mdb;
 SET NOCOUNT ON;
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
+-- =============================================================================
+-- PARAMETRO EDITAVEL  (Power Query > Etapas aplicadas > Fonte > engrenagem)
+--
+--   Cobertura da janela, em MESES, contados para tras a partir de HOJE.
+--   Padrao: 12. Exemplos: 6, 18, 24.
+--
+--   E o unico numero que precisa mudar para aumentar ou reduzir o periodo.
+--   Nenhuma regra de negocio depende dele. Detalhes no bloco [JANELA DINAMICA].
+-- =============================================================================
+DECLARE @CoberturaMeses int = 12;
+
 /*
 ================================================================================
 VERSAO POWER BI DA CONSULTA CONSOLIDADA FAIA + FARC - DECISION
@@ -23,21 +34,23 @@ posse/reposse, pareamento SOLN -> SRVY_SENT, Tempo Suspenso, Tempo Total
 Decision e o Tempo de Atendimento ja corrigido - e byte a byte identico ao da
 consulta manual. Diferem apenas TRES pontos, todos de periodo/saida:
 
-  1) o periodo deixa de ser digitado e passa a ser a janela dinamica de seis
-     ciclos completos (bloco [JANELA DINAMICA] logo abaixo);
+  1) o periodo deixa de ser digitado e passa a ser a janela movel dos ultimos
+     @CoberturaMeses meses ate hoje (bloco [JANELA DINAMICA] logo abaixo);
   2) o filtro de close_date em [1] passa a usar intervalo SEMIABERTO
      (>= inicio, < fim exclusivo) no lugar do antigo <= 23:59:59;
   3) a secao [11] deixa de ter janelas opcionais por categoria e o bloco de
      diagnostico [12] nao existe: sai UM UNICO result set.
 
 Periodo:
-  - Janela DINAMICA: sempre os seis ultimos ciclos COMPLETOS.
-  - Cada ciclo comeca no dia 24 e termina no dia 23 do mes seguinte.
-  - O ciclo atualmente em andamento NAO entra.
-  - Regra de ciclo lida em protect4/powerbi/consulta_faia_farc_power_bi.sql.
-    Da Protect4 veio SOMENTE a forma de calcular a janela. Nenhuma regra
-    funcional da Protect4 foi trazida para a Decision.
+  - Janela MOVEL: os ultimos @CoberturaMeses meses ate HOJE. Padrao 12 meses.
+  - Inicio INCLUSIVO, fim EXCLUSIVO em amanha 00:00 - assim o dia corrente
+    entra inteiro e nenhum registro de hoje se perde.
+  - Para mudar a cobertura basta alterar @CoberturaMeses. Nenhuma regra de
+    negocio depende desse numero.
   - Nao existe data fixa neste arquivo: nada precisa ser editado a cada mes.
+  - O ciclo 24-24 que existia aqui ate 2026-09-18 era regra da Protect4/A2B,
+    trazida junto com o modelo de janela daquele nucleo. A Decision nao tem
+    ciclo de faturamento 24-24 e nao deve voltar a te-lo.
 
 Saida:
   - UM UNICO result set, uma linha por chamado (SDM).
@@ -141,24 +154,50 @@ DECLARE @FornecedorGrupo     varbinary(16) = 0x24CD15F171FE7540BEACF45A53A305C5;
 DECLARE @FornecedorGrupoNome nvarchar(200) = N'Fornecedores - Decision';
 
 --------------------------------------------------------------------------------
--- [JANELA DINAMICA] - seis ultimos ciclos COMPLETOS
+-- [JANELA DINAMICA] - ultimos @CoberturaMeses meses ate HOJE
 --
 -- Substitui @InicioBrasil/@FimBrasil, que na consulta manual sao digitados.
 --
--- Ciclo = dia 24 de um mes ate o dia 23 do mes seguinte. O fim da janela e o
--- INICIO do ciclo corrente e e EXCLUSIVO - e assim que o ciclo em andamento
--- fica de fora, sem precisar de teste separado. O inicio e seis meses antes.
+-- COBERTURA - o UNICO numero que se mexe aqui
 --
--- Mecanismo (nao ha data fixa no codigo): executando num dia anterior ao 24, o
--- ciclo corrente comecou no dia 24 do mes ANTERIOR; a janela termina nesse dia
--- 24, exclusivo, e comeca seis meses antes dele. Executando no dia 24 ou
--- depois, o ciclo corrente comecou no dia 24 do proprio mes.
+--   DECLARE @CoberturaMeses int = 12;   <- padrao, no TOPO do arquivo
+--
+--   Para 6, 18 ou 24 meses, troque so esse valor. Nenhuma regra de negocio
+--   depende dele: ele move apenas o limite inferior da selecao por close_date.
+--   No Power Query a alteracao e feita em Etapas aplicadas > Fonte, editando
+--   esse DECLARE, que e a primeira instrucao depois do SET TRANSACTION.
+--
+-- POR QUE NAO HA MAIS CICLO 24-24
+--
+--   Ate 2026-09-18 este bloco devolvia os seis ultimos ciclos fechados, com o
+--   ciclo indo do dia 24 ao dia 23 do mes seguinte. Essa e a regra de
+--   faturamento da Protect4/A2B e veio junto quando o modelo de janela daquele
+--   nucleo foi reaproveitado. A Decision NAO tem ciclo 24-24.
+--
+--   O efeito pratico do erro: o corte no dia 24 descartava ate 30 dias ja
+--   encerrados, e a cobertura real oscilava conforme o dia da execucao.
+--
+-- LIMITES - inclusivo/exclusivo
+--
+--   inicio INCLUSIVO = hoje menos @CoberturaMeses meses, as 00:00:00
+--   fim    EXCLUSIVO = AMANHA as 00:00:00
+--
+--   O fim e amanha, e nao hoje, porque close_date e um instante e nao uma
+--   data: com o fim em hoje 00:00 o dia corrente ficaria inteiro de fora, e
+--   com '23:59:59' perder-se-ia o ultimo segundo do dia. O intervalo e
+--   semiaberto [inicio, fim), convencao usada em todo o projeto.
+--
+--   Nao ha data fixa no codigo: tudo deriva de SYSUTCDATETIME() convertido
+--   para o fuso do Brasil.
 --
 -- O periodo SELECIONA os chamados (por close_date). Ele NAO recorta os
 -- intervalos calculados: a linha do tempo de cada chamado vai de open_date a
--- close_date, mesmo quando parte dela ocorreu antes do inicio do ciclo (ver
+-- close_date, mesmo quando parte dela ocorreu antes do inicio da janela (ver
 -- secao [8.5]). Essa regra e da Decision e continua exatamente como estava.
 --------------------------------------------------------------------------------
+-- @CoberturaMeses e declarado na PRIMEIRA linha util do arquivo, para ficar
+-- visivel logo no topo da caixa 'Instrucao SQL' da etapa Fonte.
+
 -- Conversao para UTC/GMT usado pelo SDM em pdmtime/epoch.
 DECLARE @HorasBrasilParaUTC int = 3;
 DECLARE @Epoch datetime2(0) = '1970-01-01 00:00:00';
@@ -166,24 +205,13 @@ DECLARE @Epoch datetime2(0) = '1970-01-01 00:00:00';
 DECLARE @HojeBrasil date =
     CONVERT(date, DATEADD(HOUR, -@HorasBrasilParaUTC, SYSUTCDATETIME()));
 
-DECLARE @InicioCicloAtual date =
-    CASE
-        WHEN DAY(@HojeBrasil) >= 24
-            THEN DATEFROMPARTS(YEAR(@HojeBrasil), MONTH(@HojeBrasil), 24)
-        ELSE DATEADD(
-                 MONTH,
-                 -1,
-                 DATEFROMPARTS(YEAR(@HojeBrasil), MONTH(@HojeBrasil), 24)
-             )
-    END;
-
--- Fim EXCLUSIVO da janela = inicio do ciclo corrente, que fica de fora.
-DECLARE @FimBrasilExclusivo datetime2(0) =
-    CONVERT(datetime2(0), @InicioCicloAtual);
-
--- Inicio INCLUSIVO da janela = seis ciclos antes desse marco.
+-- Inicio INCLUSIVO da janela.
 DECLARE @InicioBrasil datetime2(0) =
-    DATEADD(MONTH, -6, @FimBrasilExclusivo);
+    CONVERT(datetime2(0), DATEADD(MONTH, -@CoberturaMeses, @HojeBrasil));
+
+-- Fim EXCLUSIVO da janela = amanha 00:00, para o dia corrente entrar inteiro.
+DECLARE @FimBrasilExclusivo datetime2(0) =
+    CONVERT(datetime2(0), DATEADD(DAY, 1, @HojeBrasil));
 
 DECLARE @FromUTC        datetime2(0) = DATEADD(HOUR, @HorasBrasilParaUTC, @InicioBrasil);
 DECLARE @ToUTCExclusivo datetime2(0) = DATEADD(HOUR, @HorasBrasilParaUTC, @FimBrasilExclusivo);
@@ -454,6 +482,40 @@ CREATE TABLE #FeriadosPorData_DEC (
     descricao nvarchar(200)  NOT NULL
 );
 
+-- ANO 2025 - calendario do TCU.
+--   Fonte: Portaria-TCU n. 10, de 13/01/2025, alterada pelas Portarias-TCU
+--   n. 67 (28/04/2025), n. 157 (30/10/2025) e n. 176 (19/12/2025), todas
+--   publicadas no Boletim do TCU. Autenticidade em www.tcu.gov.br/autenticidade,
+--   codigos 77411949, 77981373, 79190602 e 79506777.
+--   Os feriados nacionais de data fixa de 2025 ja estao em #FeriadosFixos_DEC.
+--   Pascoa (20/04/2025, domingo) nao consta da portaria e nao foi cadastrada.
+
+-- Feriados moveis de 2025.
+INSERT INTO #FeriadosPorData_DEC (data, descricao)
+VALUES
+    ('2025-04-18', N'Paixão de Cristo');
+
+-- Pontos facultativos de 2025 no TCU.
+INSERT INTO #FeriadosPorData_DEC (data, descricao)
+VALUES
+    ('2025-03-03', N'Carnaval - ponto facultativo'),
+    ('2025-03-04', N'Carnaval - ponto facultativo'),
+    ('2025-03-05', N'Quarta-Feira de Cinzas - ponto facultativo'),
+    ('2025-04-17', N'Quinta-Feira Santa - ponto facultativo'),
+    ('2025-05-02', N'Ponto facultativo - sexta-feira após Dia Mundial do Trabalho'),
+    ('2025-06-19', N'Corpus Christi - ponto facultativo'),
+    ('2025-06-20', N'Ponto facultativo - sexta-feira após Corpus Christi'),
+    ('2025-10-27', N'Dia do Servidor Público federal - ponto facultativo'),
+    ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),
+    ('2025-12-24', N'Ponto facultativo - véspera do Natal'),
+    ('2025-12-26', N'Ponto facultativo - sexta-feira após o Natal'),
+    ('2025-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
+
+-- ANO 2026 - calendario do TCU.
+--   Fonte: Portaria-TCU n. 1, de 08/01/2026, alterada pela Portaria-TCU n. 93
+--   (25/06/2026), publicadas no Boletim do TCU. Autenticidade em
+--   www.tcu.gov.br/autenticidade, codigos 79561193 e 80587034.
+
 -- Feriados moveis/diferenciados de 2026.
 INSERT INTO #FeriadosPorData_DEC (data, descricao)
 VALUES
@@ -472,6 +534,7 @@ VALUES
     ('2026-04-20', N'Ponto facultativo - emenda antes de Tiradentes'),
     ('2026-06-04', N'Corpus Christi - ponto facultativo'),
     ('2026-06-05', N'Ponto facultativo - emenda após Corpus Christi'),
+    ('2026-06-29', N'Ponto facultativo - jogo da Seleção Brasileira na Copa do Mundo FIFA 2026'),
     ('2026-10-28', N'Dia do Servidor Público federal - ponto facultativo'),
     ('2026-12-24', N'Ponto facultativo - véspera do Natal'),
     ('2026-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
@@ -479,6 +542,11 @@ VALUES
 -- Pontos facultativos de 2027:
 -- Nao cadastrar nada por enquanto. Quando houver definicao oficial, inserir aqui
 -- com data completa no formato YYYY-MM-DD.
+--
+-- MANUTENCAO: sempre que a janela passar a cobrir um ano novo, cadastrar os
+-- feriados moveis e pontos facultativos DAQUELE ano a partir da portaria anual
+-- do TCU e de TODAS as portarias que a alterarem. As portarias-base e suas
+-- alteracoes aparecem em pesquisa.apps.tcu.gov.br (base Normas).
 
 --------------------------------------------------------------------------------
 -- [0] Membros do grupo do fornecedor  (herdado do FARC)
@@ -1727,7 +1795,7 @@ CREATE UNIQUE CLUSTERED INDEX IX_ParesBaseSolnSrvy_DEC
 -- janela: entram como mudancas semanticas de status.
 --
 -- IMPORTANTE (regra do ciclo): o limite superior e o close_date do chamado e o
--- inferior e o open_date. O periodo @InicioBrasil/@FimBrasil so seleciona quais
+-- inferior e o open_date. A janela @InicioBrasil/@FimBrasilExclusivo so seleciona quais
 -- chamados entram; ele NAO corta a linha do tempo. Um chamado fechado dentro do
 -- ciclo mas com suspensao iniciada antes dele conta a suspensao inteira.
 --------------------------------------------------------------------------------

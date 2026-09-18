@@ -373,6 +373,40 @@ CREATE TABLE #FeriadosPorData_DEC (
     descricao nvarchar(200)  NOT NULL
 );
 
+-- ANO 2025 - calendario do TCU.
+--   Fonte: Portaria-TCU n. 10, de 13/01/2025, alterada pelas Portarias-TCU
+--   n. 67 (28/04/2025), n. 157 (30/10/2025) e n. 176 (19/12/2025), todas
+--   publicadas no Boletim do TCU. Autenticidade em www.tcu.gov.br/autenticidade,
+--   codigos 77411949, 77981373, 79190602 e 79506777.
+--   Os feriados nacionais de data fixa de 2025 ja estao em #FeriadosFixos_DEC.
+--   Pascoa (20/04/2025, domingo) nao consta da portaria e nao foi cadastrada.
+
+-- Feriados moveis de 2025.
+INSERT INTO #FeriadosPorData_DEC (data, descricao)
+VALUES
+    ('2025-04-18', N'Paixão de Cristo');
+
+-- Pontos facultativos de 2025 no TCU.
+INSERT INTO #FeriadosPorData_DEC (data, descricao)
+VALUES
+    ('2025-03-03', N'Carnaval - ponto facultativo'),
+    ('2025-03-04', N'Carnaval - ponto facultativo'),
+    ('2025-03-05', N'Quarta-Feira de Cinzas - ponto facultativo'),
+    ('2025-04-17', N'Quinta-Feira Santa - ponto facultativo'),
+    ('2025-05-02', N'Ponto facultativo - sexta-feira após Dia Mundial do Trabalho'),
+    ('2025-06-19', N'Corpus Christi - ponto facultativo'),
+    ('2025-06-20', N'Ponto facultativo - sexta-feira após Corpus Christi'),
+    ('2025-10-27', N'Dia do Servidor Público federal - ponto facultativo'),
+    ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),
+    ('2025-12-24', N'Ponto facultativo - véspera do Natal'),
+    ('2025-12-26', N'Ponto facultativo - sexta-feira após o Natal'),
+    ('2025-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
+
+-- ANO 2026 - calendario do TCU.
+--   Fonte: Portaria-TCU n. 1, de 08/01/2026, alterada pela Portaria-TCU n. 93
+--   (25/06/2026), publicadas no Boletim do TCU. Autenticidade em
+--   www.tcu.gov.br/autenticidade, codigos 79561193 e 80587034.
+
 -- Feriados moveis/diferenciados de 2026.
 INSERT INTO #FeriadosPorData_DEC (data, descricao)
 VALUES
@@ -391,6 +425,7 @@ VALUES
     ('2026-04-20', N'Ponto facultativo - emenda antes de Tiradentes'),
     ('2026-06-04', N'Corpus Christi - ponto facultativo'),
     ('2026-06-05', N'Ponto facultativo - emenda após Corpus Christi'),
+    ('2026-06-29', N'Ponto facultativo - jogo da Seleção Brasileira na Copa do Mundo FIFA 2026'),
     ('2026-10-28', N'Dia do Servidor Público federal - ponto facultativo'),
     ('2026-12-24', N'Ponto facultativo - véspera do Natal'),
     ('2026-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
@@ -398,6 +433,11 @@ VALUES
 -- Pontos facultativos de 2027:
 -- Nao cadastrar nada por enquanto. Quando houver definicao oficial, inserir aqui
 -- com data completa no formato YYYY-MM-DD.
+--
+-- MANUTENCAO: sempre que a janela passar a cobrir um ano novo, cadastrar os
+-- feriados moveis e pontos facultativos DAQUELE ano a partir da portaria anual
+-- do TCU e de TODAS as portarias que a alterarem. As portarias-base e suas
+-- alteracoes aparecem em pesquisa.apps.tcu.gov.br (base Normas).
 
 --------------------------------------------------------------------------------
 -- [0] Membros do grupo do fornecedor  (herdado do FARC)

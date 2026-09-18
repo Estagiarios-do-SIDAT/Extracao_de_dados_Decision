@@ -24576,3 +24576,206 @@ A investigação das automações (§68) permanece válida e não foi reaberta: 
 `coi/queries/consulta_coi_encerrados.sql` não foi tocada.
 
 --- FIM DO ARQUIVO MESTRE ---
+
+## 70. 2026-09-18 — repositório próprio da Decision; painel deixa o ciclo 24-24 e passa a janela móvel de 12 meses
+
+### 70.1. A separação física
+
+Os três núcleos, que conviviam na pasta `Queries`, foram separados em três repositórios independentes:
+
+```text
+C:\Users\X04758606161\Documents\FAIA FARC\Extracao_de_dados_Decision   <- este
+C:\Users\X04758606161\Documents\FAIA FARC\Extracao_de_dados_COI
+C:\Users\X04758606161\Documents\FAIA FARC\Extracao_de_dados_A2B
+```
+
+Remote oficial:
+
+```text
+https://github.com/Estagiarios-do-SIDAT/Extracao_de_dados_Decision.git   branch main
+```
+
+`Queries` deixa de ser fonte operacional da Decision. Trabalhos da Decision atualizam **somente** este histórico e a documentação deste repositório.
+
+As seções 1 a 69 vieram do histórico compartilhado da época de `Queries` e registram também COI e Protect4. Ficam **como estão**, como legado: várias tratam de dois núcleos na mesma seção — a §34 é Protect4 e Decision, a §44 é Decision e COI —, e separá-las exigiria reescrever o registro histórico. Menções a `Queries` nelas descrevem onde as coisas estavam na época. A partir desta seção, todo conteúdo novo aqui é da Decision.
+
+### 70.2. O ciclo 24-24 não era da Decision
+
+`decision/powerbi/consulta_faia_farc_power_bi.sql` devolvia os "seis últimos ciclos completos", com ciclo do dia 24 ao dia 23. O próprio cabeçalho do arquivo registrava a origem:
+
+```text
+Regra de ciclo lida em protect4/powerbi/consulta_faia_farc_power_bi.sql.
+Da Protect4 veio SOMENTE a forma de calcular a janela.
+```
+
+O ciclo 24-24 é regra de faturamento da A2B/Protect4. A Decision não o tem. Efeito prático: o corte no dia 24 descartava até 30 dias já encerrados, e a cobertura oscilava conforme o dia da atualização.
+
+### 70.3. A regra nova de período
+
+```text
+início  INCLUSIVO   hoje menos @CoberturaMeses meses, 00:00:00
+fim     EXCLUSIVO   amanhã 00:00:00
+padrão              @CoberturaMeses = 12
+```
+
+- O fim é **amanhã**, e não hoje, porque o filtro é por instante de encerramento (`close_date`, em segundos): assim o dia corrente entra inteiro, sem perder o último segundo e sem duplicar borda.
+- Não há data fixa: tudo deriva de `SYSUTCDATETIME()` convertido para GMT-3.
+- `@CoberturaMeses` é a **primeira instrução** do SQL, logo abaixo de `SET TRANSACTION`, para ficar visível no topo da caixa **Instrução SQL** da etapa **Fonte** do Power Query.
+- O período continua só **selecionando** chamados; os tempos seguem calculados sobre a vida inteira de cada chamado.
+
+Por que não um parâmetro do Power BI: montar o SQL por concatenação em M faria a engrenagem da etapa Fonte deixar de mostrar o texto editável e poria regra em código M não versionado. O número editável dentro do próprio SQL é a forma simples e segura disponível.
+
+### 70.4. Painel × consulta de referência
+
+Mesma janela nas duas consultas: a do painel com a janela móvel do dia (`18/09/2025 00:00` a `19/09/2026 00:00` exclusivo) e a manual com `@InicioBrasil = 2025-09-18 00:00:00` e `@FimBrasil = 2026-09-18 23:59:59`.
+
+```text
+colunas ............... 29 = 29, mesma ordem, mesmos nomes
+linhas / SDMs ......... 1478 / 1478 nas duas, 0 duplicados
+só numa das duas ...... 0
+colunas divergentes ... 0, em nenhum dos 1478 chamados
+arquivos exportados ... byte a byte idênticos (mesmo SHA256)
+somas ................. FAIA 4,73 · FARC 149,55 · nHR_FAIA 47,35 · nHR_FARC 416,40
+```
+
+O que diferia entre os dois arquivos antes desta seção e continua diferindo, sem ser regra de negócio:
+
+- **período** — digitado na manual (fim inclusivo `<= 23:59:59`); automático no painel (fim exclusivo `< amanhã 00:00`). Como `close_date` tem resolução de segundos, os dois limites selecionam os mesmos chamados;
+- **saída** — janelas opcionais e diagnóstico na manual; um único result set no painel, equivalente a `@ResultadoTudo = 1` com `@MostrarDiagnostico = 0`;
+- **desempenho** — o painel lê `dbo.act_log` uma vez na temporária `#AtosDEC` (§§46–47); a manual lê a tabela diretamente.
+
+O único ponto que diferia **como regra** — o período em ciclos 24-24 — foi o removido. Nenhuma diferença ficou sem reconciliação.
+
+Distribuição do resultado: 1.453 solicitações e 25 incidentes; `Meta Primeiro Atendimento` com 1.473 `Atende`, 3 `Não Atende` e 2 `N/A`; `Meta Atendimento` com 1.476 `Atende` e 2 `Não Atende`; 79 chamados com `Data de Encerramento Decision` vazia.
+
+### 70.5. Feriados
+
+Nada mudou no cadastro. As duas consultas têm tabelas **idênticas** (`#FeriadosFixos_DEC`, `#FeriadosPorData_DEC`), conferidas por comparação de texto. O passo a passo de manutenção passou a constar em `decision/docs/powerbi-query.md`, seção 13.
+
+**Pendência de negócio registrada:** os feriados móveis e pontos facultativos estão cadastrados **só para 2026**. Com a janela de 12 meses, os de **2025** dentro da janela não estão cadastrados, e em janeiro de 2027 faltarão os de 2027. As datas oficiais devem vir do calendário do TCU; não foram deduzidas nem inseridas.
+
+Testado: uma data repetida numa das tabelas faz a execução falhar com `Violation of PRIMARY KEY constraint`, citando a data — o erro não passa em silêncio.
+
+### 70.6. Documentação
+
+- `README.md` — escopo exclusivo da Decision, janela móvel, parâmetros reais de cada consulta, local deste histórico. Registra que os "ciclos" das pastas de análise (dia 30 ao dia 29) são períodos de validação da Decision e não têm relação com o 24-24.
+- `decision/docs/powerbi-query.md` — seções 5, 7, 9, 10, 11 e 12 revisadas; seção 13 nova, de manutenção no Power Query (cobertura e feriados).
+- `docs/powerbi/documentacao-powerbi-decision.html` — nova. Versão do mesmo conteúdo para o visual **HTML Content**: só CSS inline, sem script, sem recurso externo e **sem aspas duplas**, para poder ser colada numa medida DAX sem escape. Deriva de `powerbi-query.md`; se divergirem, vale o `.md`.
+
+## 71. 2026-09-18 (2ª) — calendário do TCU: 2025 completo e 29/06/2026, com fonte oficial; painel e consulta de referência revalidados
+
+### 71.1. Motivo
+
+Com a janela móvel de 12 meses (§70), o painel passou a recuar até 18/09/2025. As tabelas de feriados só tinham datas específicas de **2026**, então os pontos facultativos e feriados móveis de 2025 dentro da janela não eram descontados do tempo comercial. A §70.5 registrou a lacuna sem inventar datas.
+
+### 71.2. Fontes oficiais
+
+Todas as datas incluídas vêm de portarias do Presidente do TCU publicadas no **Boletim do TCU (BTCU)**, com código de autenticidade verificável em `www.tcu.gov.br/autenticidade`. A lista de alterações de cada portaria anual foi conferida no registro oficial de normas do TCU (`pesquisa.apps.tcu.gov.br`, base Normas, campo "Alterada por").
+
+```text
+Ato                              Data        BTCU                    Código     O que define
+Portaria-TCU nº 10/2025          13/01/2025  Ano 58, nº 8            77411949   calendário de 2025
+Portaria-TCU nº 67/2025          28/04/2025  Ano 58, nº 77           77981373   inclui 02/05/2025
+Portaria-TCU nº 157/2025         30/10/2025  Ano 58, nº 206          79190602   inclui 21/11/2025
+Portaria-TCU nº 176/2025         19/12/2025  Ano 58, nº 239          79506777   inclui 26/12/2025
+Portaria-TCU nº 1/2026           08/01/2026  Ano 59, nº 4            79561193   calendário de 2026
+Portaria-TCU nº 93/2026          25/06/2026  Ano 59, nº 114          80587034   inclui 29/06/2026
+```
+
+Segundo o registro do TCU, a Portaria nº 10/2025 foi alterada **somente** pelas nº 67, 157 e 176, e a nº 1/2026 **somente** pela nº 93. A Portaria nº 179/2025, do mesmo BTCU da 176, define 02/01/2026, que já estava cadastrado.
+
+Uma notícia do Sindilegis serviu apenas de pista para localizar as portarias nº 176 e 179; nenhuma data foi incluída com base nela. Um resumo automático de busca afirmou que 02/01/**2025** seria ponto facultativo — **falso**: a Portaria nº 10/2025 não o inclui. O que existe é 02/01/**2026**.
+
+### 71.3. Datas incluídas
+
+**2025 — ano completo**, em `#FeriadosPorData_DEC`:
+
+```text
+Data        Tipo                   Descrição                                          Base legal
+2025-03-03  ponto facultativo      Carnaval                                           Port. 10, II
+2025-03-04  ponto facultativo      Carnaval                                           Port. 10, III
+2025-03-05  ponto facultativo      Quarta-Feira de Cinzas                             Port. 10, IV
+2025-04-17  ponto facultativo      Quinta-Feira Santa                                 Port. 10, V
+2025-04-18  feriado nacional móvel Paixão de Cristo                                   Port. 10, VI
+2025-05-02  ponto facultativo      sexta-feira após Dia Mundial do Trabalho           Port. 67
+2025-06-19  ponto facultativo      Corpus Christi                                     Port. 10, IX
+2025-06-20  ponto facultativo      sexta-feira após Corpus Christi                    Port. 10, X
+2025-10-27  ponto facultativo      Dia do Servidor Público federal                    Port. 10, XIII
+2025-11-21  ponto facultativo      sexta-feira após Consciência Negra                 Port. 157
+2025-12-24  ponto facultativo      véspera do Natal                                   Port. 10, XVII
+2025-12-26  ponto facultativo      sexta-feira após o Natal                           Port. 176
+2025-12-31  ponto facultativo      véspera do Ano Novo                                Port. 10, XIX
+```
+
+Os feriados nacionais de data fixa de 2025 (01/01, 21/04, 01/05, 07/09, 12/10, 02/11, 15/11, 20/11, 25/12) já estavam em `#FeriadosFixos_DEC` e conferem com a portaria. A Páscoa de 2025 (20/04, domingo) não consta da portaria e não foi cadastrada.
+
+Observação que evita erro por analogia: em 2025 o TCU comemorou o Dia do Servidor em **27/10 (segunda)**, não em 28/10. Em 2026 é 28/10.
+
+**Por que o ano inteiro, e não só a partir de 18/09/2025.** O chamado mais antigo da janela atual foi aberto em 11/09/2025, então as datas de janeiro a agosto de 2025 **não alteram nenhum chamado hoje** — e a medição confirmou isso: nenhum chamado mudou por causa delas. Foram incluídas porque a consulta de referência é executada para qualquer período, porque `@CoberturaMeses` pode ser aumentado, e porque 2026 também está completo. Um ano pela metade seria uma armadilha para a próxima pessoa.
+
+**2026 — correção de uma data faltante.** A lista de 2026 foi conferida contra a Portaria nº 1/2026 e a nº 93/2026. Faltava:
+
+```text
+2026-06-29  ponto facultativo  jogo da Seleção Brasileira na Copa do Mundo FIFA 2026   Port. 93/2026
+```
+
+A data está dentro da janela atual e tem fonte primária; foi incluída como correção de erro comprovado. Nenhuma outra data de 2026 foi alterada. A entrada `2026-04-05 Páscoa`, que não consta da portaria, foi mantida: é domingo e não afeta nenhum cálculo.
+
+**2027** não foi cadastrado: a portaria ainda não existe e o ano não está na janela.
+
+### 71.4. Alteração no SQL
+
+Somente o bloco `[FERIADOS E PONTOS FACULTATIVOS]`, idêntico nas duas consultas:
+
+- `decision/queries/consulta_faia_farc.sql`
+- `decision/powerbi/consulta_faia_farc_power_bi.sql`
+
+Acrescentados: o bloco de 2025 (1 feriado móvel e 12 pontos facultativos, com comentário citando portarias e códigos de autenticidade), o comentário de fonte do bloco de 2026, a linha `2026-06-29` e uma nota de manutenção junto ao comentário de 2027. Os dois blocos continuam byte a byte iguais entre as consultas. Nada fora desse bloco mudou; parser do SQL Server 2016 sem erros nos dois arquivos.
+
+Resultado: 27 datas específicas (13 de 2025, 14 de 2026) e 9 feriados fixos.
+
+### 71.5. Impacto nos cálculos
+
+Medido executando a consulta do painel três vezes, na mesma janela e sobre os mesmos dados: antes, só com 2025, e completa.
+
+```text
+                               SDMs afetados
+calendário de 2025 ...........      39
+29/06/2026 ...................       4
+total ........................      43   de 1478
+```
+
+- Colunas alteradas: `Tempo Total Decision` (43), `Tempo de Atendimento` (41), `Tempo suspenso` (38), `Tempo Primeiro Atendimento` (38).
+- **Nenhuma** alteração em `Meta Primeiro Atendimento`, `Meta Atendimento`, `nHR_FAIA`, `nHR_FARC`, `FAIA` ou `FARC`: nenhum chamado mudou de "Atende" para "Não Atende" ou vice-versa.
+- **Todos** os 43 chamados têm ao menos uma das datas novas dentro da própria vida, e **todos** são de severidade 3, 4 ou 5 — as de calendário comercial. Nenhum P1/P2 mudou, como a regra prevê.
+- Datas que causaram diferença: 26/12/2025 (17 chamados), 21/11/2025 (11), 31/12/2025 (8), 24/12/2025 (7), 27/10/2025 (5), 29/06/2026 (4). Um chamado pode passar por mais de uma.
+- Exemplos: SDM 1649344, aberto em 13/10/2025 e fechado em 06/11/2025, perdeu exatamente 12:00:00 em `Tempo Total Decision` e em `Tempo de Atendimento` — um dia comercial, o de 27/10. SDMs 1652757 a 1652760, checklists diários abertos e encerrados no próprio 27/10/2025, passaram a ter `Tempo Total Decision`, `Tempo suspenso` e `Tempo Primeiro Atendimento` zerados. No `Tempo de Atendimento` restam 37, 11, 4 e 9 segundos — exatamente o `Tempo suspenso` que tinham antes, o que é compatível com o intervalo `SOLN → SRVY_SENT`, somado ao `Tempo de Atendimento` por regra própria (`faia-farc-calculation.md`, seção 6).
+
+### 71.6. Painel × consulta de referência, depois da alteração
+
+Execução em 18/09/2026. Janela do painel: `18/09/2025 00:00` (inclusivo) a `19/09/2026 00:00` (exclusivo). Consulta de referência com `@InicioBrasil = 2025-09-18 00:00:00` e `@FimBrasil = 2026-09-18 23:59:59`, as duas já com o calendário novo.
+
+```text
+linhas / SDMs .......... 1478 / 1478 nas duas, 0 duplicados
+só na referência ....... 0
+só no painel ........... 0
+colunas divergentes .... 0 nas 29, em nenhum chamado
+FAIA / FARC ............ 4,73 / 149,55 nas duas
+nHR_FAIA / nHR_FARC .... 47,35 / 416,40 nas duas
+SHA256 dos exportados .. idêntico: 6cb4bcb9deb9332f4e7b1e1d541db9a698081396db1f73d8b5c40bc307ec6147
+```
+
+Painel = consulta de referência. As duas mudaram **juntas**: o SHA256 do resultado passou de `798acf01…` (antes) para `6cb4bcb9…` (depois), com o impacto da §71.5. Uma coisa não se confunde com a outra — continuar iguais não significa que nada mudou.
+
+### 71.7. O que não mudou
+
+- Janela padrão: **12 meses móveis** (`@CoberturaMeses = 12`), início inclusivo em hoje menos 12 meses, fim exclusivo em amanhã 00:00. Sem ciclo 24-24.
+- Nenhuma regra de FAIA, FARC, rotina, status, suspensão, acordo ou exceção.
+- COI e A2B não foram tocados.
+
+### 71.8. Documentação
+
+- `decision/docs/powerbi-query.md` — seção 13: de onde vêm as datas, tabela de portarias por ano, o que entra em cada tabela, exemplo real de inclusão, situação do cadastro e quando revisar; seção 12 atualizada.
+- `docs/powerbi/documentacao-powerbi-decision.html` — mesmas informações, coerentes com o `.md`.
+- `README.md` — parâmetros de feriados com a regra de fonte oficial.
+- O exemplo de inclusão da rodada anterior, `('2027-02-08', N'Carnaval…')`, foi substituído por uma data real já cadastrada: parecia uma data oficial de 2027 sem ter fonte.

@@ -1,0 +1,138 @@
+<!-- Documentacao do painel FAIA/FARC da Decision para o visual HTML Content.
+Fonte oficial: decision/docs/powerbi-query.md. Em caso de divergencia, vale ela.
+Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
+<div style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#1f2328;background:#ffffff;padding:16px;max-width:900px'>
+
+<h1 style='font-size:20px;margin:0 0 4px 0;color:#0b3d6b'>Painel FAIA e FARC — Decision</h1>
+<p style='margin:0 0 12px 0;color:#57606a'>Como a fonte de dados deste painel funciona e como mantê-la. Atualizado em 18/09/2026.</p>
+
+<div style='background:#eef5fc;border-left:4px solid #0b5cad;padding:10px 12px;margin:0 0 16px 0'>
+<b>Em uma linha:</b> o painel mostra os chamados da Decision <b>encerrados nos últimos 12 meses até hoje</b>, com FAIA e FARC na mesma linha, calculados pela mesma regra da consulta de referência. A janela anda sozinha a cada atualização.
+</div>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>1. O que é medido</h2>
+<ul style='margin-top:4px'>
+<li><b>FAIA</b> — o <b>começo</b>: quanto tempo passou até alguém pegar o chamado depois que ele entrou no grupo Fornecedores - Decision. Se o chamado já nasceu no grupo, conta da abertura.</li>
+<li><b>FARC</b> — a <b>duração do trabalho</b>: quanto tempo o chamado ficou efetivamente em atendimento até ser resolvido, descontado o tempo suspenso.</li>
+<li>Os dois são independentes. Quando o tempo passa da meta, calcula-se o excedente, o <b>nHR</b> e o valor do indicador (nHR × fator do contrato).</li>
+<li>O <b>nHR é proporcional</b>: 1h30 de atraso aparece como <b>1,50</b>, nunca como 2.</li>
+</ul>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>2. De onde vêm os dados</h2>
+<p>Base <b>mdb</b> do CA Service Desk Manager, lida <b>somente para leitura</b>. O SQL roda no SQL Server; o Power BI apenas envia o texto e importa o resultado.</p>
+<table style='border-collapse:collapse;width:100%;margin:6px 0 10px 0'>
+<tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Tabela</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Papel</th></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>call_req</td><td style='border:1px solid #d0d7de;padding:4px 6px'>O chamado: tipo, severidade, status, categoria, abertura, fechamento</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>act_log</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Histórico de eventos: status, transferências, solução, pesquisa. De onde saem quase todos os marcos de tempo</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>ca_contact, grpmem</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Pessoas, grupos e composição dos grupos</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>cr_stat, pri, prob_ctg</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Dicionários de status, severidade e categoria</td></tr>
+</table>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>3. Relação com a consulta de referência</h2>
+<p>A referência funcional é a consulta manual <b>decision/queries/consulta_faia_farc.sql</b>. A consulta do painel, <b>decision/powerbi/consulta_faia_farc_power_bi.sql</b>, <b>não tem regra própria</b>: o motor de cálculo é o mesmo. As diferenças são só de:</p>
+<ul style='margin-top:4px'>
+<li><b>período</b> — digitado na manual, automático no painel;</li>
+<li><b>saída</b> — a manual tem janelas opcionais por categoria; o painel devolve um único resultado com todas as categorias, e o recorte G1, G2, SAN, Servidores ou LibQuantum é feito no próprio painel pela coluna Categoria;</li>
+<li><b>desempenho</b> — o painel lê o histórico de eventos uma única vez; os filtros e os textos são os mesmos.</li>
+</ul>
+<div style='background:#eaf6ec;border-left:4px solid #1a7f37;padding:10px 12px;margin:6px 0 16px 0'>
+<b>Equivalência conferida em 18/09/2026:</b> para a mesma janela (18/09/2025 a 18/09/2026), a consulta do painel e a consulta de referência devolveram <b>resultados idênticos</b> — os mesmos 1.478 chamados, as mesmas 29 colunas e nenhuma diferença em nenhum valor. Revalidado depois da inclusão do calendário de 2025 e de 29/06/2026: continuam idênticas.
+</div>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>4. Período: últimos 12 meses até hoje</h2>
+<table style='border-collapse:collapse;width:100%;margin:6px 0 10px 0'>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px;background:#f6f8fa;width:30%'><b>Início</b> (inclusivo)</td><td style='border:1px solid #d0d7de;padding:4px 6px'>hoje menos 12 meses, às 00:00</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px;background:#f6f8fa'><b>Fim</b> (exclusivo)</td><td style='border:1px solid #d0d7de;padding:4px 6px'>amanhã às 00:00 — assim tudo que fechou <b>hoje</b> entra</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px;background:#f6f8fa'><b>Filtro</b></td><td style='border:1px solid #d0d7de;padding:4px 6px'>data de <b>encerramento</b> do chamado, no horário do Brasil (GMT-3)</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px;background:#f6f8fa'><b>Exemplo</b></td><td style='border:1px solid #d0d7de;padding:4px 6px'>atualizando em 18/09/2026: chamados encerrados de 18/09/2025 até 18/09/2026, inclusive</td></tr>
+</table>
+<ul style='margin-top:4px'>
+<li>O período <b>seleciona</b> quais chamados entram. Ele <b>não corta</b> os tempos: um chamado aberto antes da janela é calculado sobre a vida inteira.</li>
+<li>O primeiro mês e o mês corrente aparecem <b>parciais</b> ao agrupar por mês. Não é defeito.</li>
+<li><b>Não existe ciclo 24-24 na Decision.</b> Essa é a regra da A2B/Protect4; ela esteve neste painel por engano e foi removida em 18/09/2026.</li>
+</ul>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>5. Regras de cálculo que valem a pena lembrar</h2>
+<ul style='margin-top:4px'>
+<li><b>Calendário por severidade:</b> P1 e P2 contam <b>corrido</b> (24h, com fim de semana e feriado); P3, P4 e P5 contam <b>comercial</b> (segunda a sexta, 08:00–20:00, sem feriados e pontos facultativos do TCU).</li>
+<li><b>Rotinas</b> (checklists, relatórios, documentação) usam um motor próprio: da abertura ao encerramento da Decision, descontando os períodos suspensos. Os demais chamados somam só os intervalos em que estiveram ativos.</li>
+<li><b>Três tempos diferentes:</b> <i>Tempo Total Decision</i> é o tempo trabalhado líquido; <i>Tempo suspenso</i> é o relógio parado; <i>Tempo de Atendimento</i> é a base comparada com a meta do FARC. Não são intercambiáveis.</li>
+<li><b>Data de Encerramento Decision não é o fechamento do chamado.</b> É quando a Decision entregou para homologação. Pode ficar <b>vazia</b> de propósito — por exemplo, numa rotina não executada por causa de ponto facultativo. Vazio aqui é informação, não erro.</li>
+<li>Um chamado que só existe no escopo do FARC aparece com as colunas do FAIA vazias; ele não some.</li>
+</ul>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>6. Saída</h2>
+<p><b>Uma linha por chamado</b> (SDM), <b>29 colunas</b>, FAIA e FARC juntos. Principais:</p>
+<table style='border-collapse:collapse;width:100%;margin:6px 0 10px 0'>
+<tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Grupo</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Colunas</th></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>Chamado</td><td style='border:1px solid #d0d7de;padding:4px 6px'>SDM, Tipo Chamado, Severidade, Status, Categoria, Data de Abertura, Data de Encerramento Total do Chamado, Data de Encerramento Decision</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>FAIA</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Data Captura, Tempo Primeiro Atendimento, Meta Primeiro Atendimento, nHR_FAIA, FAIA</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>FARC</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Tempo Total Decision, Tempo suspenso, Tempo de Atendimento, Meta Atendimento, nHR_FARC, FARC</td></tr>
+</table>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>7. Manutenção no Power Query</h2>
+<p><b>Onde fica o SQL:</b> Página Inicial › <b>Transformar dados</b> › selecione a consulta da Decision › em <b>Etapas aplicadas</b>, clique na <b>engrenagem</b> da etapa <b>Fonte</b> › <b>Opções avançadas</b> › campo <b>Instrução SQL</b>. Depois de editar: <b>OK</b> › <b>Fechar e aplicar</b>, e aprove a <b>consulta nativa</b> quando o Power BI pedir.</p>
+
+<h3 style='font-size:14px;margin:10px 0 4px 0'>Aumentar ou reduzir a cobertura</h3>
+<p>A primeira instrução do SQL, logo no topo do campo, é:</p>
+<p style='font-family:Consolas,monospace;background:#f6f8fa;border:1px solid #d0d7de;padding:6px 8px'>DECLARE @CoberturaMeses int = 12;</p>
+<table style='border-collapse:collapse;margin:6px 0 10px 0'>
+<tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 10px'>Cobertura</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 10px'>Troque o número para</th></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 10px'>6 meses</td><td style='border:1px solid #d0d7de;padding:4px 10px'>6</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 10px'>12 meses (padrão)</td><td style='border:1px solid #d0d7de;padding:4px 10px'>12</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 10px'>18 meses</td><td style='border:1px solid #d0d7de;padding:4px 10px'>18</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 10px'>24 meses</td><td style='border:1px solid #d0d7de;padding:4px 10px'>24</td></tr>
+</table>
+<p>É o <b>único</b> número que muda. Nenhuma regra depende dele. Se a mudança for permanente, faça a mesma troca no arquivo do repositório e registre no Histórico Mestre da Decision.</p>
+
+<h3 style='font-size:14px;margin:10px 0 4px 0'>Atualizar feriados e pontos facultativos</h3>
+<p>Ficam dentro do SQL, no bloco <b>[FERIADOS E PONTOS FACULTATIVOS]</b>:</p>
+<ul style='margin-top:4px'>
+<li><b>#FeriadosFixos_DEC</b> — feriados nacionais que caem no mesmo dia todo ano, formato <b>'MM-DD'</b>. Ex.: ('12-25', N'Natal'),</li>
+<li><b>#FeriadosPorData_DEC</b> — feriados móveis (Paixão de Cristo) e <b>pontos facultativos do TCU</b>, formato <b>'YYYY-MM-DD'</b>. Ex.: ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),</li>
+</ul>
+<p><b>Fonte obrigatória:</b> somente a portaria anual do TCU que define feriados e pontos facultativos do ano, publicada no Boletim do TCU, <b>e todas as portarias que a alterarem</b>. Consulte em pesquisa.apps.tcu.gov.br, base Normas. Não use calendário civil genérico nem de outro órgão.</p>
+<table style='border-collapse:collapse;margin:6px 0 10px 0'>
+<tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 8px'>Ano</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 8px'>Portaria anual</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 8px'>Alterações</th></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 8px'>2025</td><td style='border:1px solid #d0d7de;padding:4px 8px'>Portaria-TCU nº 10, de 13/01/2025</td><td style='border:1px solid #d0d7de;padding:4px 8px'>nº 67, nº 157 e nº 176 de 2025</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 8px'>2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>Portaria-TCU nº 1, de 08/01/2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>nº 93 de 2026</td></tr>
+</table>
+<ol style='margin-top:4px'>
+<li>Edite o arquivo <b>decision/powerbi/consulta_faia_farc_power_bi.sql</b> num editor: adicione, corrija ou apague a linha. A última linha de cada lista termina em ponto e vírgula, não em vírgula.</li>
+<li>Faça <b>a mesma alteração</b> em <b>decision/queries/consulta_faia_farc.sql</b>. As duas listas têm de ser iguais.</li>
+<li>Copie o arquivo do painel <b>inteiro</b> e cole no campo <b>Instrução SQL</b> da etapa Fonte.</li>
+<li>OK › Fechar e aplicar › aprove a consulta nativa › <b>Atualizar</b>.</li>
+</ol>
+<p><b>Efeito:</b> o dia cadastrado deixa de contar como tempo <b>comercial</b> — metas P3 a P5 de FAIA e FARC, início da contagem quando a abertura cai em feriado, motor das rotinas e tempo suspenso do FARC. Metas em tempo corrido não mudam. Os valores só mudam depois de atualizar, e podem mudar para chamados já carregados cuja vida passe pela data.</p>
+
+<div style='background:#fff8e6;border-left:4px solid #bf8700;padding:10px 12px;margin:10px 0'>
+<b>Situação do cadastro:</b> feriados fixos valem para todos os anos. Os móveis e os pontos facultativos estão cadastrados para <b>2025 e 2026 completos</b>, conferidos contra as portarias do TCU. <b>2027 ainda não está cadastrado</b>: revise o calendário sempre que a janela passar a cobrir um ano novo (com 12 meses, a partir de 1º de janeiro) e sempre que o TCU alterar o calendário do ano corrente.
+</div>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>8. Alertas de manutenção</h2>
+<div style='background:#fdecec;border-left:4px solid #cf222e;padding:10px 12px;margin:6px 0 10px 0'>
+<b>Não altere sem nova validação contra a consulta de referência:</b>
+<ul style='margin:4px 0 0 0'>
+<li>filtros de status, categorias, grupo Fornecedores - Decision e tabelas de SLA/metas;</li>
+<li>o tratamento do histórico de eventos (act_log) — mexer ali já custou minutos de execução;</li>
+<li>a regra de Data de Encerramento Decision — não preencha vazios com a data de fechamento;</li>
+<li>as 29 colunas e a regra de uma linha por chamado.</li>
+</ul>
+</div>
+<ul style='margin-top:4px'>
+<li><b>Não reintroduza ciclo 24-24</b> e <b>não troque a cobertura por datas fixas</b>: a janela tem de andar sozinha.</li>
+<li>Uma data de feriado <b>repetida</b> faz a atualização falhar com <i>Violation of PRIMARY KEY constraint</i>; a mensagem cita a data. Remova a duplicata.</li>
+<li>Toda mudança feita no painel deve ser feita também no repositório <b>Extracao_de_dados_Decision</b>.</li>
+</ul>
+
+<h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>9. Conferência depois de atualizar</h2>
+<ol style='margin-top:4px'>
+<li><b>Sem duplicidade:</b> número de linhas = número de SDMs distintos. Se diferir, não use o resultado.</li>
+<li><b>Volume:</b> a janela anda um dia por dia; o total deve variar pouco entre atualizações.</li>
+<li><b>Datas:</b> Abertura ≤ Captura ≤ Encerramento. Captura vazia é normal em chamado sem captura.</li>
+<li><b>nHR com casas decimais</b> — 1,50 e não 2.</li>
+<li><b>Tipos:</b> devem aparecer Incidente, Solicitação e Problema.</li>
+</ol>
+
+<p style='margin-top:16px;color:#57606a;font-size:12px'>Documentação completa: decision/docs/powerbi-query.md, no repositório Extracao_de_dados_Decision. Histórico: docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md.</p>
+</div>
