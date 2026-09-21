@@ -36,7 +36,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li><b>desempenho</b> — o painel lê o histórico de eventos uma única vez; os filtros e os textos são os mesmos.</li>
 </ul>
 <div style='background:#eaf6ec;border-left:4px solid #1a7f37;padding:10px 12px;margin:6px 0 16px 0'>
-<b>Equivalência conferida em 18/09/2026:</b> para a mesma janela (18/09/2025 a 18/09/2026), a consulta do painel e a consulta de referência devolveram <b>resultados idênticos</b> — os mesmos 1.478 chamados, as mesmas 29 colunas e nenhuma diferença em nenhum valor. Revalidado depois da inclusão do calendário de 2025 e de 29/06/2026: continuam idênticas.
+<b>Equivalência conferida em 18/09/2026:</b> para a mesma janela (18/09/2025 a 18/09/2026), a consulta do painel e a consulta de referência devolveram <b>resultados idênticos</b> — os mesmos 1.478 chamados, as mesmas 29 colunas e nenhuma diferença em nenhum valor.
 </div>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>4. Período: últimos 12 meses até hoje</h2>
@@ -49,7 +49,6 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <ul style='margin-top:4px'>
 <li>O período <b>seleciona</b> quais chamados entram. Ele <b>não corta</b> os tempos: um chamado aberto antes da janela é calculado sobre a vida inteira.</li>
 <li>O primeiro mês e o mês corrente aparecem <b>parciais</b> ao agrupar por mês. Não é defeito.</li>
-<li><b>Não existe ciclo 24-24 na Decision.</b> Essa é a regra da A2B/Protect4; ela esteve neste painel por engano e foi removida em 18/09/2026.</li>
 </ul>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>5. Regras de cálculo que valem a pena lembrar</h2>
@@ -83,7 +82,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <tr><td style='border:1px solid #d0d7de;padding:4px 10px'>18 meses</td><td style='border:1px solid #d0d7de;padding:4px 10px'>18</td></tr>
 <tr><td style='border:1px solid #d0d7de;padding:4px 10px'>24 meses</td><td style='border:1px solid #d0d7de;padding:4px 10px'>24</td></tr>
 </table>
-<p>É o <b>único</b> número que muda. Nenhuma regra depende dele. Se a mudança for permanente, faça a mesma troca no arquivo do repositório e registre no Histórico Mestre da Decision.</p>
+<p>É o <b>único</b> número que muda. Nenhuma regra depende dele.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Atualizar feriados e pontos facultativos</h3>
 <p>Ficam dentro do SQL, no bloco <b>[FERIADOS E PONTOS FACULTATIVOS]</b>:</p>
@@ -99,7 +98,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </table>
 <ol style='margin-top:4px'>
 <li>Edite o arquivo <b>powerbi/consulta_faia_farc_power_bi.sql</b> num editor: adicione, corrija ou apague a linha. A última linha de cada lista termina em ponto e vírgula, não em vírgula.</li>
-<li>Faça <b>a mesma alteração</b> em <b>queries/consulta_faia_farc.sql</b>. As duas listas têm de ser iguais.</li>
+<li>A consulta de referência, <b>queries/consulta_faia_farc.sql</b>, tem a mesma lista: as duas precisam ficar iguais, senão os números divergem.</li>
 <li>Copie o arquivo do painel <b>inteiro</b> e cole no campo <b>Instrução SQL</b> da etapa Fonte.</li>
 <li>OK › Fechar e aplicar › aprove a consulta nativa › <b>Atualizar</b>.</li>
 </ol>
@@ -120,9 +119,9 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </ul>
 </div>
 <ul style='margin-top:4px'>
-<li><b>Não reintroduza ciclo 24-24</b> e <b>não troque a cobertura por datas fixas</b>: a janela tem de andar sozinha.</li>
+<li><b>O período é uma janela móvel</b>, recalculada a cada atualização. Trocar @CoberturaMeses muda quantos meses ela cobre; datas fixas descaracterizam a regra.</li>
 <li>Uma data de feriado <b>repetida</b> faz a atualização falhar com <i>Violation of PRIMARY KEY constraint</i>; a mensagem cita a data. Remova a duplicata.</li>
-<li>Toda mudança feita no painel deve ser feita também no repositório <b>Extracao_de_dados_Decision</b>.</li>
+<li>A consulta fica incorporada ao relatório: a alteração vale na próxima atualização. Há um repositório interno, de versionamento e manutenção técnica, mantido pela equipe responsável.</li>
 </ul>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>9. Conferência depois de atualizar</h2>
@@ -134,5 +133,5 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li><b>Tipos:</b> devem aparecer Incidente, Solicitação e Problema.</li>
 </ol>
 
-<p style='margin-top:16px;color:#57606a;font-size:12px'>Documentação completa: docs/powerbi-query.md, no repositório Extracao_de_dados_Decision. Histórico: project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md.</p>
+<p style='margin-top:16px;color:#57606a;font-size:12px'>Documentação completa e histórico técnico ficam no repositório interno de manutenção da Decision, usado apenas pela equipe responsável pelo relatório.</p>
 </div>

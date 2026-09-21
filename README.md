@@ -82,7 +82,7 @@ A Decision tem **duas** consultas, com a mesma regra de cálculo e finalidades d
 
 A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`docs/powerbi-query.md`](docs/powerbi-query.md#5-período-da-consulta).
 
-A Decision **não tem ciclo 24-24**. Essa regra é da A2B/Protect4; ela havia sido copiada para o painel da Decision e foi removida em 2026-09-18.
+O período da Decision é uma **janela móvel de meses**, e não um ciclo de faturamento com dia fixo de virada.
 
 A documentação fica em `docs/`:
 
@@ -161,7 +161,7 @@ As planilhas de análise servem para registrar se os resultados da consulta bate
 
 Ao alterar uma regra de cálculo, atualize também a documentação correspondente em `docs/`.
 
-Ao validar um novo ciclo, salve a planilha na pasta `analysis/`. Os "ciclos" das pastas de análise (`Ciclo 30_04 - 29_05`, …) são os períodos de validação usados pela Decision, do dia 30 ao dia 29; não têm relação com o ciclo 24-24 da A2B.
+Ao validar um novo ciclo, salve a planilha na pasta `analysis/`. Os "ciclos" das pastas de análise (`Ciclo 30_04 - 29_05`, …) são os períodos de validação usados pela Decision, do dia 30 ao dia 29, e são independentes da janela móvel que alimenta o painel.
 
 ## Histórico Mestre
 

@@ -201,17 +201,6 @@ são calculados sobre a vida inteira do chamado.
 agrupar o painel por mês, o **primeiro** mês aparece parcial (do dia de início
 em diante) e o **mês corrente** também, porque ainda não terminou. Não é defeito.
 
-### Não existe ciclo 24-24 na Decision
-
-Até 18/09/2026 esta consulta devolvia os "seis últimos ciclos completos", com
-ciclo do dia 24 ao dia 23. **Essa é a regra de faturamento da A2B/Protect4**, e
-entrou aqui quando o modelo de janela daquele núcleo foi reaproveitado. A
-Decision não tem ciclo 24-24. O efeito prático do erro era descartar até 30 dias
-já encerrados, com cobertura oscilando conforme o dia da atualização.
-
-A troca mexeu **somente** no período. Nenhuma regra de cálculo mudou — ver
-[seção 7](#7-diferença-para-a-consulta-manual).
-
 ### Mudar a cobertura
 
 Para 6, 18 ou 24 meses, troca-se só o número de `@CoberturaMeses`. O passo a
@@ -486,9 +475,9 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   consulta. Ao incluir uma data nova, inclua **também** na consulta manual,
   senão os números passam a divergir. Passo a passo na
   [seção 13](#13-manutenção-no-power-query).
-- **Não reintroduzir ciclo 24-24.** É regra da A2B/Protect4, não da Decision.
-- **Não trocar `@CoberturaMeses` por datas fixas.** A janela tem de andar
-  sozinha.
+- **O período é uma janela móvel**, calculada a cada atualização a partir da
+  data corrente. Trocar `@CoberturaMeses` muda quantos meses ela cobre; datas
+  fixas descaracterizam a regra e exigem nova validação.
 
 ---
 
@@ -509,10 +498,8 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   chamado. Os dois arquivos exportados são **byte a byte idênticos** (mesmo
   SHA256). Somas conferidas: `FAIA` 4,73; `FARC` 149,55; `nHR_FAIA` 47,35;
   `nHR_FARC` 416,40, iguais nas duas.
-- **revalidada no mesmo dia depois do calendário de 2025 e de 29/06/2026**:
-  mesma janela, mesmos 1.478 SDMs, 0 divergências, exportados de novo byte a
-  byte idênticos. As duas consultas mudaram juntas — 43 chamados tiveram tempos
-  recalculados, nenhum mudou de meta, `nHR`, FAIA ou FARC.
+- a conferência foi repetida com o calendário vigente, com o mesmo resultado:
+  mesma janela, mesmos 1.478 SDMs e 0 divergências entre as duas consultas.
 
 **Validado no código** (leitura e conferência estática):
 
@@ -577,9 +564,10 @@ DECLARE @CoberturaMeses int = 12;
 
 É o único número que muda. Não altere mais nada do texto para mudar o período.
 
-Se a cobertura nova for **permanente**, faça a mesma troca em
-`powerbi/consulta_faia_farc_power_bi.sql` e registre no Histórico
-Mestre, para o repositório continuar igual ao painel.
+A consulta usada pelo painel fica incorporada ao próprio relatório, então a
+troca vale a partir da próxima atualização. Existe um repositório interno, usado
+para versionamento e manutenção técnica, onde a mesma alteração é registrada
+pela equipe responsável quando a cobertura muda em definitivo.
 
 ### Atualizar feriados e pontos facultativos
 
@@ -636,9 +624,9 @@ SQL** não tem busca. O caminho seguro é editar o **arquivo** e colar de volta:
    Registre no comentário do bloco a portaria de origem.
 3. **Corrigir:** edite a data ou a descrição na linha existente.
 4. **Remover:** apague a linha inteira e confira a vírgula da linha anterior.
-5. Faça **exatamente a mesma alteração** em
-   `queries/consulta_faia_farc.sql`. As duas consultas têm de ter a
-   mesma lista, senão os números passam a divergir.
+5. A consulta de referência, `queries/consulta_faia_farc.sql`, tem a mesma
+   lista de datas. As duas precisam ficar iguais, senão os números do painel e
+   os da referência divergem.
 6. Copie o arquivo do Power BI **inteiro** e cole no campo **Instrução SQL** da
    etapa **Fonte**, substituindo o texto anterior.
 7. **OK → Fechar e aplicar**, aprove a consulta nativa e **atualize**.
