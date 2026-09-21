@@ -24,7 +24,7 @@ cálculo de cada indicador está em [faia-farc-calculation.md](faia-farc-calcula
 13. [Manutenção no Power Query](#13-manutenção-no-power-query)
 
 Há uma versão desta documentação em HTML, para exibir dentro do painel no visual
-**HTML Content**: `docs/powerbi/documentacao-powerbi-decision.html`. Ela deriva
+**HTML Content**: `docs/documentacao-powerbi-decision.html`. Ela deriva
 deste arquivo; se os dois divergirem, **vale este**.
 
 ---
@@ -45,7 +45,7 @@ diagnóstico nem resultados intermediários.
 Arquivo:
 
 ```text
-decision/powerbi/consulta_faia_farc_power_bi.sql
+powerbi/consulta_faia_farc_power_bi.sql
 ```
 
 ---
@@ -55,7 +55,7 @@ decision/powerbi/consulta_faia_farc_power_bi.sql
 A **referência funcional** continua sendo a consulta manual:
 
 ```text
-decision/queries/consulta_faia_farc.sql
+queries/consulta_faia_farc.sql
 ```
 
 A versão do Power BI **não reimplementa** nenhum cálculo. O motor — FAIA, FARC,
@@ -283,7 +283,7 @@ Um chamado que exista só no escopo do FARC aparece com as colunas do FAIA
 
 | | Consulta manual | Consulta Power BI |
 |---|---|---|
-| Arquivo | `decision/queries/consulta_faia_farc.sql` | `decision/powerbi/consulta_faia_farc_power_bi.sql` |
+| Arquivo | `queries/consulta_faia_farc.sql` | `powerbi/consulta_faia_farc_power_bi.sql` |
 | Período | **Digitado à mão** (`@InicioBrasil` / `@FimBrasil`, fim inclusivo `23:59:59`) | **Automático**: últimos `@CoberturaMeses` meses até hoje, fim exclusivo em amanhã 00:00 |
 | Saída | Várias janelas opcionais por categoria, mais bloco de diagnóstico | **Um** result set, sem filtro de categoria |
 | Uso | Execução e análise pontual de um período | Atualização do painel |
@@ -376,7 +376,7 @@ concluiu uma atividade que os próprios logs registram como **não executada**.
 
 Um `NULL` nessa coluna, portanto, é **informação**, não falha de dados. A
 evidência detalhada dos casos investigados está no histórico do projeto, em
-`docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md`.
+`project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md`.
 
 ### Isolamento comprovado
 
@@ -578,7 +578,7 @@ DECLARE @CoberturaMeses int = 12;
 É o único número que muda. Não altere mais nada do texto para mudar o período.
 
 Se a cobertura nova for **permanente**, faça a mesma troca em
-`decision/powerbi/consulta_faia_farc_power_bi.sql` e registre no Histórico
+`powerbi/consulta_faia_farc_power_bi.sql` e registre no Histórico
 Mestre, para o repositório continuar igual ao painel.
 
 ### Atualizar feriados e pontos facultativos
@@ -626,7 +626,7 @@ linha de cada `VALUES` termina em `;` e não em vírgula.
 **Como fazer.** O bloco fica no meio de um texto longo, e a caixa **Instrução
 SQL** não tem busca. O caminho seguro é editar o **arquivo** e colar de volta:
 
-1. Abra `decision/powerbi/consulta_faia_farc_power_bi.sql` num editor e procure
+1. Abra `powerbi/consulta_faia_farc_power_bi.sql` num editor e procure
    `[FERIADOS E PONTOS FACULTATIVOS]`.
 2. **Adicionar:** inclua uma linha na tabela certa, no bloco do ano. Ex., o
    ponto facultativo de 21/11/2025 (Portaria-TCU nº 157/2025):
@@ -637,7 +637,7 @@ SQL** não tem busca. O caminho seguro é editar o **arquivo** e colar de volta:
 3. **Corrigir:** edite a data ou a descrição na linha existente.
 4. **Remover:** apague a linha inteira e confira a vírgula da linha anterior.
 5. Faça **exatamente a mesma alteração** em
-   `decision/queries/consulta_faia_farc.sql`. As duas consultas têm de ter a
+   `queries/consulta_faia_farc.sql`. As duas consultas têm de ter a
    mesma lista, senão os números passam a divergir.
 6. Copie o arquivo do Power BI **inteiro** e cole no campo **Instrução SQL** da
    etapa **Fonte**, substituindo o texto anterior.

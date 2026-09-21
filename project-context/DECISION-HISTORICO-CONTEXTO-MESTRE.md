@@ -24779,3 +24779,27 @@ Painel = consulta de referência. As duas mudaram **juntas**: o SHA256 do result
 - `docs/powerbi/documentacao-powerbi-decision.html` — mesmas informações, coerentes com o `.md`.
 - `README.md` — parâmetros de feriados com a regra de fonte oficial.
 - O exemplo de inclusão da rodada anterior, `('2027-02-08', N'Carnaval…')`, foi substituído por uma data real já cadastrada: parecia uma data oficial de 2027 sem ter fonte.
+
+## 72. 2026-09-18 (3ª) — estrutura sem a pasta `decision/`; documentação unificada em `docs/`; histórico renomeado
+
+Somente reorganização de arquivos. Nenhuma regra, consulta ou resultado mudou.
+
+A pasta intermediária `decision/` só repetia o escopo do repositório e foi removida. Tudo com `git mv`:
+
+```text
+decision/queries/                      -> queries/
+decision/powerbi/                      -> powerbi/
+decision/analysis/                     -> analysis/
+decision/logs/                         -> logs/
+decision/docs/*.md                     -> docs/
+docs/powerbi/documentacao-powerbi-decision.html
+                                       -> docs/documentacao-powerbi-decision.html
+docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md
+                                       -> project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md
+```
+
+As duas consultas e as de `support/` têm os **mesmos blobs** no Git antes e depois: são byte a byte as publicadas em `6cf6183`. Os comentários de cabeçalho dos SQL que citam `decision/queries/…` não foram alterados, justamente para manter essa identidade.
+
+README, `docs/powerbi-query.md`, `docs/faia-farc-calculation.md` e o HTML passaram a citar os caminhos novos. As seções anteriores deste histórico citam os caminhos da época e não foram reescritas. A pasta antiga `Queries`, fora dos repositórios, foi excluída nesta data.
+
+Regra daqui para frente: trabalho da Decision atualiza **somente** este arquivo.

@@ -10,31 +10,25 @@ Este repositório atende **somente a Decision**. COI e A2B/Protect4 têm reposit
 
 ```text
 .
-├── decision/
-│   ├── queries/
-│   │   └── consulta_faia_farc.sql        FAIA e FARC juntos, uma linha por chamado
-│   ├── powerbi/
-│   │   └── consulta_faia_farc_power_bi.sql   fonte do painel, últimos 12 meses até hoje
-│   ├── docs/
-│   │   ├── faia-farc-calculation.md      como cada coluna é calculada
-│   │   └── powerbi-query.md              a versão do painel: período, manutenção, saída e desempenho
-│   ├── analysis/
-│   │   └── planilhas de comparação por ciclo
-│   └── logs/
-│       └── logs consolidados por ciclo e categoria
-│
+├── queries/
+│   └── consulta_faia_farc.sql              consulta de referência: FAIA e FARC, uma linha por chamado
+├── powerbi/
+│   └── consulta_faia_farc_power_bi.sql     fonte do painel, últimos 12 meses até hoje
 ├── docs/
-│   ├── powerbi/
-│   │   └── documentacao-powerbi-decision.html   leitura dentro do painel (visual HTML Content)
-│   └── project-context/
-│       └── FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md   Histórico Mestre da Decision
-│
+│   ├── faia-farc-calculation.md            como cada coluna é calculada
+│   ├── powerbi-query.md                    a versão do painel: período, manutenção, saída e desempenho
+│   └── documentacao-powerbi-decision.html  leitura dentro do painel (visual HTML Content)
+├── analysis/
+│   └── planilhas de comparação por ciclo de validação
+├── logs/
+│   └── logs consolidados por ciclo de validação e categoria
+├── project-context/
+│   └── DECISION-HISTORICO-CONTEXTO-MESTRE.md   Histórico Mestre da Decision
 ├── support/
 │   ├── consulta_logs_chamados_listados.sql
 │   ├── consulta_status_chamados.sql
 │   ├── consulta_status_hold.sql
 │   └── consulta_tipos_chamado.sql
-│
 ├── README.md
 └── .git/
 ```
@@ -69,7 +63,7 @@ A consulta calcula o tempo considerado válido para o atendimento do chamado e c
 
 | Arquivo | Finalidade |
 |---|---|
-| `decision/queries/consulta_faia_farc.sql` | Calcula o FAIA **e** o FARC da Decision numa única execução |
+| `queries/consulta_faia_farc.sql` | Calcula o FAIA **e** o FARC da Decision numa única execução |
 
 É uma consulta só, com **uma linha por chamado**. A ordem das colunas é:
 
@@ -83,24 +77,24 @@ A Decision tem **duas** consultas, com a mesma regra de cálculo e finalidades d
 
 | Arquivo | Finalidade | Período |
 |---|---|---|
-| [`decision/queries/consulta_faia_farc.sql`](decision/queries/consulta_faia_farc.sql) | Execução e análise pontual. É a **referência funcional** | Digitado à mão |
-| [`decision/powerbi/consulta_faia_farc_power_bi.sql`](decision/powerbi/consulta_faia_farc_power_bi.sql) | Fonte do painel | **Automático** |
+| [`queries/consulta_faia_farc.sql`](queries/consulta_faia_farc.sql) | Execução e análise pontual. É a **referência funcional** | Digitado à mão |
+| [`powerbi/consulta_faia_farc_power_bi.sql`](powerbi/consulta_faia_farc_power_bi.sql) | Fonte do painel | **Automático** |
 
-A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`decision/docs/powerbi-query.md`](decision/docs/powerbi-query.md#5-período-da-consulta).
+A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`docs/powerbi-query.md`](docs/powerbi-query.md#5-período-da-consulta).
 
 A Decision **não tem ciclo 24-24**. Essa regra é da A2B/Protect4; ela havia sido copiada para o painel da Decision e foi removida em 2026-09-18.
 
-A documentação fica em `decision/docs/`:
+A documentação fica em `docs/`:
 
 | Documento | O que explica |
 |---|---|
-| [`decision/docs/faia-farc-calculation.md`](decision/docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
-| [`decision/docs/powerbi-query.md`](decision/docs/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
-| [`docs/powerbi/documentacao-powerbi-decision.html`](docs/powerbi/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
+| [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
+| [`docs/powerbi-query.md`](docs/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
+| [`docs/documentacao-powerbi-decision.html`](docs/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
 
-> Uma nota que evita confusão frequente: `Data de Encerramento Decision` **não é** o fechamento do chamado. Ela marca quando a Decision concluiu a atuação dela, e fica **vazia** quando não houve conclusão — por exemplo, numa rotina que não foi executada por causa de ponto facultativo. Isso é explicado em [`decision/docs/powerbi-query.md`](decision/docs/powerbi-query.md#8-data-de-encerramento-decision).
+> Uma nota que evita confusão frequente: `Data de Encerramento Decision` **não é** o fechamento do chamado. Ela marca quando a Decision concluiu a atuação dela, e fica **vazia** quando não houve conclusão — por exemplo, numa rotina que não foi executada por causa de ponto facultativo. Isso é explicado em [`docs/powerbi-query.md`](docs/powerbi-query.md#8-data-de-encerramento-decision).
 
-As planilhas em `decision/analysis/` guardam as comparações feitas por ciclo e por frente de atendimento.
+As planilhas em `analysis/` guardam as comparações feitas por ciclo e por frente de atendimento.
 
 ## Consultas de apoio
 
@@ -129,7 +123,7 @@ Quando houver divergência, use `@MostrarDiagnostico = 1` para retornar tabelas 
 
 ## Parâmetros comuns
 
-**Consulta manual** (`decision/queries/consulta_faia_farc.sql`):
+**Consulta manual** (`queries/consulta_faia_farc.sql`):
 
 ```sql
 DECLARE @InicioBrasil datetime2(0) = '2026-03-01 00:00:00';  -- inclusivo
@@ -141,7 +135,7 @@ DECLARE @MostrarDiagnostico bit = 0
 - `@MostrarDiagnostico = 0` retorna apenas o resultado final; `1` retorna informações extras para investigação.
 - `@ResultadoTudo`, `@G1`, `@G2`, `@SAN`, `@Servidores`, `@LibQuantum` escolhem quais janelas de resultado aparecem.
 
-**Consulta do Power BI** (`decision/powerbi/consulta_faia_farc_power_bi.sql`):
+**Consulta do Power BI** (`powerbi/consulta_faia_farc_power_bi.sql`):
 
 - `@CoberturaMeses` — cobertura da janela em meses, padrão `12`. É o único parâmetro de período.
 - Feriados e pontos facultativos: tabelas `#FeriadosFixos_DEC` (`'MM-DD'`) e `#FeriadosPorData_DEC` (`'YYYY-MM-DD'`), dentro do SQL. As datas vêm **somente** das portarias do TCU que definem o expediente de cada ano e das que as alteram; hoje estão cadastrados 2025 e 2026. Toda alteração deve ser feita **igual** nas duas consultas.
@@ -158,20 +152,24 @@ As planilhas de análise servem para registrar se os resultados da consulta bate
 
 ## Convenções do projeto
 
-- `decision/queries/`: consultas executáveis do indicador da Decision.
-- `decision/docs/`: explicações das regras e dos cálculos.
-- `decision/analysis/`: arquivos de comparação e validação.
+- `queries/`: consulta de referência da Decision.
+- `powerbi/`: consulta do painel.
+- `docs/`: explicações das regras, dos cálculos e do painel, inclusive a versão HTML.
+- `analysis/` e `logs/`: arquivos de comparação e validação.
+- `project-context/`: Histórico Mestre da Decision.
 - `support/`: consultas auxiliares.
 
-Ao alterar uma regra de cálculo, atualize também a documentação correspondente em `decision/docs/`.
+Ao alterar uma regra de cálculo, atualize também a documentação correspondente em `docs/`.
 
-Ao validar um novo ciclo, salve a planilha na pasta `decision/analysis/`. Os "ciclos" das pastas de análise (`Ciclo 30_04 - 29_05`, …) são os períodos de validação usados pela Decision, do dia 30 ao dia 29; não têm relação com o ciclo 24-24 da A2B.
+Ao validar um novo ciclo, salve a planilha na pasta `analysis/`. Os "ciclos" das pastas de análise (`Ciclo 30_04 - 29_05`, …) são os períodos de validação usados pela Decision, do dia 30 ao dia 29; não têm relação com o ciclo 24-24 da A2B.
 
 ## Histórico Mestre
 
 O histórico do projeto fica em
-[`docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md`](docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md).
+[`project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md`](project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md).
 
 - Ele é **append-only**: cada intervenção vira uma seção nova, e seções antigas não são reescritas.
 - Trabalhos da Decision atualizam **somente** este histórico. COI e A2B mantêm o seu, nos respectivos repositórios.
-- As seções anteriores à separação dos repositórios foram herdadas do documento compartilhado da época de `Queries` e contêm registros de COI e Protect4. Elas são mantidas como **legado histórico**, sem reescrita.
+- As seções anteriores à separação dos repositórios foram herdadas do documento compartilhado da época de `Queries` e contêm registros de COI e Protect4. Elas são mantidas como **legado histórico**, sem reescrita. Caminhos citados nelas (`decision/…`, `docs/project-context/`, …) descrevem a estrutura da época.
+- O arquivo se chamava `FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md`, nome herdado do documento compartilhado; foi renomeado em 2026-09-18.
+- Os comentários de cabeçalho das consultas ainda citam `decision/queries/…`. Não foram alterados para que os SQL continuem byte a byte iguais aos publicados; hoje esses arquivos ficam em `queries/` e `powerbi/`.

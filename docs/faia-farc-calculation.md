@@ -3,7 +3,7 @@
 Explicação em linguagem simples da única consulta da Decision:
 
 ```text
-decision/queries/consulta_faia_farc.sql
+queries/consulta_faia_farc.sql
 ```
 
 Ela devolve **uma linha por chamado**, com os dois indicadores lado a lado. Antes existiam duas consultas separadas (`consulta_faia.sql` e `consulta_farc.sql`); elas foram substituídas e não devem mais ser usadas.
@@ -142,7 +142,7 @@ Reabertura não quebra a regra: um chamado reaberto tem mais de um `SOLN`, e cad
 O chamado **1705403** (`Decision.Servidores. Realizar Checklist/ HealthCheck`, ciclo de 30/05/2026 a 29/06/2026) é uma rotina simples: abre, é trabalhada e encerra no mesmo dia, sem nenhum status de suspensão.
 
 Os marcos abaixo vêm do log de eventos do próprio chamado, em
-`decision/logs/Ciclo 30_05 - 29_06/servidores/request/logs.xlsx`:
+`logs/Ciclo 30_05 - 29_06/servidores/request/logs.xlsx`:
 
 | Marco | Valor |
 |---|---|

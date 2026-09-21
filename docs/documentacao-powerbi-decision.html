@@ -1,5 +1,5 @@
 <!-- Documentacao do painel FAIA/FARC da Decision para o visual HTML Content.
-Fonte oficial: decision/docs/powerbi-query.md. Em caso de divergencia, vale ela.
+Fonte oficial: docs/powerbi-query.md. Em caso de divergencia, vale ela.
 Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <div style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#1f2328;background:#ffffff;padding:16px;max-width:900px'>
 
@@ -29,7 +29,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </table>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>3. Relação com a consulta de referência</h2>
-<p>A referência funcional é a consulta manual <b>decision/queries/consulta_faia_farc.sql</b>. A consulta do painel, <b>decision/powerbi/consulta_faia_farc_power_bi.sql</b>, <b>não tem regra própria</b>: o motor de cálculo é o mesmo. As diferenças são só de:</p>
+<p>A referência funcional é a consulta manual <b>queries/consulta_faia_farc.sql</b>. A consulta do painel, <b>powerbi/consulta_faia_farc_power_bi.sql</b>, <b>não tem regra própria</b>: o motor de cálculo é o mesmo. As diferenças são só de:</p>
 <ul style='margin-top:4px'>
 <li><b>período</b> — digitado na manual, automático no painel;</li>
 <li><b>saída</b> — a manual tem janelas opcionais por categoria; o painel devolve um único resultado com todas as categorias, e o recorte G1, G2, SAN, Servidores ou LibQuantum é feito no próprio painel pela coluna Categoria;</li>
@@ -98,8 +98,8 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <tr><td style='border:1px solid #d0d7de;padding:4px 8px'>2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>Portaria-TCU nº 1, de 08/01/2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>nº 93 de 2026</td></tr>
 </table>
 <ol style='margin-top:4px'>
-<li>Edite o arquivo <b>decision/powerbi/consulta_faia_farc_power_bi.sql</b> num editor: adicione, corrija ou apague a linha. A última linha de cada lista termina em ponto e vírgula, não em vírgula.</li>
-<li>Faça <b>a mesma alteração</b> em <b>decision/queries/consulta_faia_farc.sql</b>. As duas listas têm de ser iguais.</li>
+<li>Edite o arquivo <b>powerbi/consulta_faia_farc_power_bi.sql</b> num editor: adicione, corrija ou apague a linha. A última linha de cada lista termina em ponto e vírgula, não em vírgula.</li>
+<li>Faça <b>a mesma alteração</b> em <b>queries/consulta_faia_farc.sql</b>. As duas listas têm de ser iguais.</li>
 <li>Copie o arquivo do painel <b>inteiro</b> e cole no campo <b>Instrução SQL</b> da etapa Fonte.</li>
 <li>OK › Fechar e aplicar › aprove a consulta nativa › <b>Atualizar</b>.</li>
 </ol>
@@ -134,5 +134,5 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li><b>Tipos:</b> devem aparecer Incidente, Solicitação e Problema.</li>
 </ol>
 
-<p style='margin-top:16px;color:#57606a;font-size:12px'>Documentação completa: decision/docs/powerbi-query.md, no repositório Extracao_de_dados_Decision. Histórico: docs/project-context/FAIA-FARC-HISTORICO-CONTEXTO-MESTRE.md.</p>
+<p style='margin-top:16px;color:#57606a;font-size:12px'>Documentação completa: docs/powerbi-query.md, no repositório Extracao_de_dados_Decision. Histórico: project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md.</p>
 </div>
