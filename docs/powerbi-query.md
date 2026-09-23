@@ -14,7 +14,7 @@ cálculo de cada indicador está em [faia-farc-calculation.md](faia-farc-calcula
 3. [Como usar no Power BI](#3-como-usar-no-power-bi)
 4. [Power BI e SQL Server](#4-power-bi-e-sql-server)
 5. [Período da consulta](#5-período-da-consulta)
-6. [Saída](#6-saída)
+6. [Saída](#6-saída) — inclui [Data Entrada Grupo Decision](#61-data-entrada-grupo-decision)
 7. [Diferença para a consulta manual](#7-diferença-para-a-consulta-manual)
 8. [`Data de Encerramento Decision`](#8-data-de-encerramento-decision)
 9. [Desempenho](#9-desempenho)
@@ -39,7 +39,7 @@ resultado do FAIA
 resultado do FARC
 ```
 
-Ela devolve **um único resultado**, com **29 colunas**. Não traz tabelas de
+Ela devolve **um único resultado**, com **30 colunas**. Não traz tabelas de
 diagnóstico nem resultados intermediários.
 
 Arquivo:
@@ -225,11 +225,11 @@ feriados do período mais antigo estão cadastrados — ver
 ```text
 1 result set
 1 linha por SDM
-29 colunas
+30 colunas
 FAIA e FARC juntos, na mesma linha
 ```
 
-As 29 colunas, na ordem em que saem:
+As 30 colunas, na ordem em que saem:
 
 | # | Coluna | Origem |
 |---|---|---|
@@ -242,29 +242,58 @@ As 29 colunas, na ordem em que saem:
 | 7 | `Responsável Atendimento` | compartilhada |
 | 8 | `Resumo` | compartilhada |
 | 9 | `Data de Abertura` | compartilhada |
-| 10 | `Data de Encerramento Total do Chamado` | compartilhada |
-| 11 | `Data de Encerramento Decision` | compartilhada — ver [seção 8](#8-data-de-encerramento-decision) |
-| 12 | `Tempo Total Decision` | compartilhada |
-| 13 | `Tempo suspenso` | compartilhada |
-| 14 | `Data Captura` | FAIA |
-| 15 | `Tempo Primeiro Atendimento` | FAIA |
-| 16 | `Primeiro Atendimento Excedido` | FAIA |
-| 17 | `Meta Primeiro Atendimento` | FAIA |
-| 18 | `Indicador Reabertura` | FAIA |
-| 19 | `Acordo Prazo` | FAIA (reservada, sempre `-`) |
-| 20 | `Acordo Qualidade` | FAIA (reservada, sempre `-`) |
-| 21 | `Justificativa` | FAIA (reservada, sempre `-`) |
-| 22 | `nHR_FAIA` | FAIA |
-| 23 | `FAIA` | FAIA |
-| 24 | `Data Resolução` | FARC |
-| 25 | `Tempo de Atendimento` | FARC |
-| 26 | `Tempo Atendimento Excedido` | FARC |
-| 27 | `Meta Atendimento` | FARC |
-| 28 | `nHR_FARC` | FARC |
-| 29 | `FARC` | FARC |
+| 10 | `Data Entrada Grupo Decision` | compartilhada — ver [seção 6.1](#61-data-entrada-grupo-decision) |
+| 11 | `Data de Encerramento Total do Chamado` | compartilhada |
+| 12 | `Data de Encerramento Decision` | compartilhada — ver [seção 8](#8-data-de-encerramento-decision) |
+| 13 | `Tempo Total Decision` | compartilhada |
+| 14 | `Tempo suspenso` | compartilhada |
+| 15 | `Data Captura` | FAIA |
+| 16 | `Tempo Primeiro Atendimento` | FAIA |
+| 17 | `Primeiro Atendimento Excedido` | FAIA |
+| 18 | `Meta Primeiro Atendimento` | FAIA |
+| 19 | `Indicador Reabertura` | FAIA |
+| 20 | `Acordo Prazo` | FAIA (reservada, sempre `-`) |
+| 21 | `Acordo Qualidade` | FAIA (reservada, sempre `-`) |
+| 22 | `Justificativa` | FAIA (reservada, sempre `-`) |
+| 23 | `nHR_FAIA` | FAIA |
+| 24 | `FAIA` | FAIA |
+| 25 | `Data Resolução` | FARC |
+| 26 | `Tempo de Atendimento` | FARC |
+| 27 | `Tempo Atendimento Excedido` | FARC |
+| 28 | `Meta Atendimento` | FARC |
+| 29 | `nHR_FARC` | FARC |
+| 30 | `FARC` | FARC |
 
 Um chamado que exista só no escopo do FARC aparece com as colunas do FAIA
 **vazias** — ele não some do resultado.
+
+### 6.1 Data Entrada Grupo Decision
+
+Marca **quando o chamado caiu no grupo Fornecedores - Decision**, sempre na
+**primeira** entrada. Se o chamado saiu e voltou ao grupo, a coluna continua
+mostrando a primeira vez.
+
+É uma coluna diferente de `Data Captura`, e não a substitui:
+
+| Coluna | O que marca |
+|---|---|
+| `Data de Abertura` | Abertura do chamado no SDM, em qualquer grupo |
+| `Data Entrada Grupo Decision` | Quando o chamado passou a ser da Decision |
+| `Data Captura` | Primeira ida para "Em andamento", quando alguém começou a atuar |
+
+Quando o chamado **nasce** no grupo, a entrada coincide com a abertura. Quando
+chega por transferência, fica entre a abertura e o momento em que a Decision
+assumiu o atendimento.
+
+No período conferido as três aparecem em ordem crescente em todos os chamados,
+mas isso é um **resultado observado**, não uma restrição imposta pela consulta:
+cada coluna vem de uma fonte própria.
+
+Chamado sem registro de entrada no histórico fica com a coluna **vazia**, do
+mesmo modo que `Data Captura` fica vazia quando não houve captura.
+
+A coluna é informativa: nenhum tempo, meta, `nHR` ou valor de FAIA/FARC muda por
+causa dela.
 
 ---
 
@@ -282,7 +311,7 @@ O recorte por G1, G2, SAN, Servidores ou LibQuantum, que na manual é feito por
 flags, no Power BI é feito **no próprio painel**, pela coluna `Categoria`, que já
 vem no resultado.
 
-Não há diferença funcional entre as duas para nenhuma das 29 colunas.
+Não há diferença funcional entre as duas para nenhuma das 30 colunas.
 
 As diferenças de texto entre os dois arquivos são de três tipos, nenhum deles de
 regra:
@@ -367,31 +396,6 @@ Um `NULL` nessa coluna, portanto, é **informação**, não falha de dados. A
 evidência detalhada dos casos investigados está no histórico do projeto, em
 `project-context/DECISION-HISTORICO-CONTEXTO-MESTRE.md`.
 
-### Isolamento comprovado
-
-A regressão da correção comparou o resultado antes e depois, chamado a chamado:
-
-```text
-732 linhas antes  ->  732 linhas depois
-732 SDMs antes    ->  732 SDMs depois
-0 SDMs ausentes   |   0 SDMs extras
-0 divergências nas outras 28 colunas
-0 valores não-NULL sobrescritos
-```
-
-**A correção não alterou nenhum cálculo de tempo.** Permaneceram idênticos:
-
-```text
-Tempo Total Decision
-Tempo suspenso
-Tempo Primeiro Atendimento
-Tempo de Atendimento
-FAIA
-FARC
-nHR_FAIA
-nHR_FARC
-```
-
 ---
 
 ## 9. Desempenho
@@ -443,8 +447,11 @@ usado.
 um dia por dia, então o total deve variar pouco de uma atualização para outra.
 Uma variação grande merece investigação.
 
-**3. Datas.** `Data de Abertura` ≤ `Data Captura` ≤ `Data de Encerramento Total
-do Chamado`. Chamado sem captura fica com `Data Captura` vazia — é normal.
+**3. Datas.** O esperado é `Data de Abertura` ≤ `Data Entrada Grupo Decision` ≤
+`Data Captura` ≤ `Data de Encerramento Total do Chamado`. Um chamado fora dessa
+ordem não é erro automático: vale checar o histórico de grupo dele. Chamado sem
+captura fica com `Data Captura` vazia — é normal, e o mesmo vale para a entrada
+no grupo quando o histórico não a registra.
 
 **4. `Data de Encerramento Decision` vazia.** Não é erro por si só. Confira se o
 chamado é uma rotina não executada antes de tratar como defeito
@@ -466,7 +473,7 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   inteiro.
 - **Mudanças no tratamento de `act_log` devem preservar o desempenho.**
   Reintroduzir leitura crua da tabela já custou minutos de execução uma vez.
-- **Manter 29 colunas e uma linha por SDM.** Toda tabela que pode multiplicar
+- **Manter 30 colunas e uma linha por SDM.** Toda tabela que pode multiplicar
   linhas é agregada antes da junção final; alterar isso quebra o contrato de
   saída.
 - **Preservar a equivalência funcional com a consulta manual.** As duas devem
@@ -491,15 +498,29 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   18/09/2025 às 10:38, o que confirma a inclusão do dia inicial, e nenhum dos
   1.478 chamados está fora da janela;
 - 1.478 linhas e 1.478 SDMs distintos, sem duplicidade;
-- **equivalência com a consulta manual**: executada com
-  `@InicioBrasil = 2025-09-18 00:00:00` e `@FimBrasil = 2026-09-18 23:59:59`, a
-  manual devolveu **exatamente o mesmo resultado** — mesmas 29 colunas na mesma
+- **equivalência com a consulta manual**: executada com o mesmo período, a
+  manual devolveu **exatamente o mesmo resultado** — as mesmas colunas na mesma
   ordem, os mesmos 1.478 SDMs, nenhuma divergência em nenhuma coluna de nenhum
   chamado. Os dois arquivos exportados são **byte a byte idênticos** (mesmo
   SHA256). Somas conferidas: `FAIA` 4,73; `FARC` 149,55; `nHR_FAIA` 47,35;
   `nHR_FARC` 416,40, iguais nas duas.
 - a conferência foi repetida com o calendário vigente, com o mesmo resultado:
   mesma janela, mesmos 1.478 SDMs e 0 divergências entre as duas consultas.
+
+**Conferência de `Data Entrada Grupo Decision`**, na janela de 22/09/2025 a
+22/09/2026:
+
+- as 1.478 linhas trazem a coluna preenchida; nenhuma ficou vazia;
+- 1.429 chamados nasceram no grupo (entrada = abertura) e 49 chegaram por
+  transferência (entrada posterior à abertura);
+- em todos eles a entrada no grupo ficou antes ou no mesmo instante da
+  `Data Captura`, e nunca antes da `Data de Abertura`;
+- nos chamados que entraram, saíram e voltaram ao grupo, a coluna mostra a
+  **primeira** entrada. Em `1725544`, que entrou em 19/08 às 18:13:03, saiu em
+  20/08 às 10:55:16 e voltou às 10:56:41, a coluna traz 19/08 18:13:03;
+- os valores conferidos contra o `act_log` bruto coincidem ao segundo;
+- painel e consulta de referência devolvem a coluna com o mesmo valor em todos
+  os 1.478 chamados.
 
 **Validado no código** (leitura e conferência estática):
 

@@ -24803,3 +24803,237 @@ As duas consultas e as de `support/` têm os **mesmos blobs** no Git antes e dep
 README, `docs/powerbi-query.md`, `docs/faia-farc-calculation.md` e o HTML passaram a citar os caminhos novos. As seções anteriores deste histórico citam os caminhos da época e não foram reescritas. A pasta antiga `Queries`, fora dos repositórios, foi excluída nesta data.
 
 Regra daqui para frente: trabalho da Decision atualiza **somente** este arquivo.
+
+---
+
+## 73. 2026-09-22 — coluna `Data Entrada Grupo Decision`; percentuais FAIA/FARC não implementados por falta de fórmula comprovada
+
+### 73.1. Pedido
+
+Duas coisas: acrescentar a data/hora em que o chamado cai no grupo
+`Fornecedores - Decision` — conceito distinto de `Data Captura`, primeira
+entrada e não a última reentrada, sem substituir a captura — e acrescentar
+`FAIA %`, `FARC %` e `Total de Desconto (FAIA+FARC) %`, **estes últimos somente
+se a fórmula estivesse comprovada**. Manter todas as colunas atuais.
+
+### 73.2. Percentuais: investigação e decisão de NÃO implementar
+
+Varridas as 34 planilhas de `analysis/` e `logs/` (leitura direta do XML do
+`.xlsx`: `sharedStrings.xml`, `xl/worksheets/sheet*.xml` e `xl/styles.xml`),
+além de `docs/`, `README.md`, `project-context/` e as duas consultas.
+
+O que existe:
+
+- as abas de relatório do ciclo 30/04–29/05 (`g1`, `g2`, `lib`, `servidores`)
+  têm as colunas `FAIA` (S), `FARC` (AC), `Total de Desconto (FAIA+FARC)` (AD),
+  `Justificativa`, `Justificado?` e `Total de Desconto Final (FAIA+FARC) (R$)`
+  (AG);
+- o `numFmt` das três primeiras é `0.00%` e o de AG é moeda
+  (`"R$" #,##0.00`). O gerente portanto **lê** FAIA e FARC como percentual;
+- as abas da consulta confirmam o cálculo até o valor: `nHR_FAIA` 7 → `FAIA`
+  0,70 e 3 → 0,30 (fator 0,10); `nHR_FARC` 83 → `FARC` 16,60 (fator 0,20).
+
+O que **não** existe:
+
+- nenhuma fórmula de percentual. As únicas fórmulas nessas pastas são de
+  conferência (`ABS(C2-E2)<=TIME(0,0,2)`, `COUNTIF`, cobertura %); as células de
+  desconto são valores colados;
+- nenhum valor diferente de zero nas colunas de desconto. Em todas as linhas de
+  todas as abas de relatório, `FAIA`, `FARC` e `Total de Desconto` valem `0` —
+  e zero é invariante a escala;
+- nenhum texto contratual, valor-base de faturamento ou regra de teto.
+
+Consequência: não é possível distinguir se `FAIA` já é ponto percentual
+(`nHR` 7 → 0,70 %) ou fração (`nHR` 7 → 70,00 %). A diferença é de 100× num
+número que vira desconto em reais. `Total de Desconto Final (R$)` depende ainda
+de um valor-base ausente do repositório. **Os percentuais não foram
+implementados.**
+
+Para destravar basta uma das duas: uma linha real com `nHR ≠ 0` na planilha do
+gerente mostrando `FAIA` e o percentual lado a lado, ou a cláusula contratual
+que define o fator.
+
+### 73.3. `Data Entrada Grupo Decision` — regra
+
+Nova tabela `#EntradaGrupoDecision_DEC`, em `[3.3.1]`, sobre o escopo unificado
+`#EscopoIds_DEC` (e não só o do FAIA, para a coluna existir também nos chamados
+que entram apenas pelo FARC):
+
+1. sem nenhum evento de grupo → `open_date` (nasceu no grupo e ali ficou);
+2. o primeiro evento de grupo saiu da Decision → `open_date` (já estava no
+   grupo desde a abertura);
+3. caso contrário → `#TransfGrupo_DEC.primeira_entrada_fornecedor_epoch`, o
+   `MIN` dos eventos com destino Decision — a **primeira** entrada;
+4. sem evidência → `NULL`.
+
+É a mesma regra que já define o início da contagem do FAIA
+(`#InicioContagemFAIA_DEC`), aqui calculada para todo o escopo e publicada como
+coluna própria. Nenhuma métrica lê a tabela nova.
+
+`#EntradaGrupo_DEC`, usada pelo FARC, **não** serve para esta coluna: ela ordena
+por `entrada_grupo_epoch DESC` e devolve a **última** entrada.
+
+**Determinismo.** A leitura do primeiro evento usa agregação sobre o menor
+segundo (`MIN(evento_epoch)` com `MAX(CONVERT(int, origem_decision))` entre os
+eventos daquele segundo), e não `TOP (1)` sobre ordenação de chave repetida.
+Com vários eventos no mesmo segundo o valor não depende da ordem física
+escolhida pelo SQL Server. `#GrupoEventos_DEC` não carrega o `act_log.id`, então
+o desempate por `id` usado na A2B não estava disponível aqui sem alterar uma
+estrutura que alimenta o FAIA.
+
+### 73.4. Saída
+
+A coluna sai como `[Data Entrada Grupo Decision]`, na **posição 10**, logo após
+`[Data de Abertura]`. O resultado passa de 29 para 30 colunas; nenhuma coluna
+existente mudou de nome, de conteúdo ou de posição relativa.
+
+Alteração aplicada às duas consultas, `queries/consulta_faia_farc.sql` e
+`powerbi/consulta_faia_farc_power_bi.sql`, com o mesmo texto: +91 linhas em cada
+uma, **0 remoções**. `TSql130Parser` e `TSql160Parser`: 0 erros.
+
+### 73.5. Validação em execução
+
+Janela de 22/09/2025 a 22/09/2026, quatro execuções (referência e painel, antes
+e depois), 1.478 linhas cada.
+
+**Regressão.** Nas 29 colunas que já existiam: 0 linhas diferentes, 0 SDMs
+ausentes, 0 SDMs extras — nas duas consultas. Painel e referência continuam
+devolvendo resultados idênticos entre si, inclusive na coluna nova.
+
+**A coluna.** 1.478 de 1.478 preenchidas. Em todas, entrada ≤ `Data Captura` e
+entrada ≥ `Data de Abertura`. 1.429 nasceram no grupo (entrada = abertura) e 49
+chegaram por transferência.
+
+**Conferência contra o `act_log` bruto** (eventos `type = 'TR'`):
+
+| SDM | Log | Coluna |
+|---|---|---|
+| 1646923 | `'COI'` → `'Fornecedores - Decision'` em 02/10 20:09:09 | 02/10 20:09:09 |
+| 1647344 | `'NSTI SEGURANÇA'` → Decision em 06/10 17:37:53 | 06/10 17:37:53 |
+| 1649344 | `'COI'` → Decision em 13/10 10:55:52 | 13/10 10:55:52 |
+| 1650417 | `'COI'` → Decision em 16/10 11:20:20 | 16/10 11:20:20 |
+| 1654346 | `'COI'` → Decision em 03/11 08:11:05 | 03/11 08:11:05 |
+| 1643457 | nenhuma transferência de grupo | = abertura, 22/09 10:00:01 |
+
+**Reentrada** — o caso que separa primeira de última:
+
+- `1725544`: entrou 19/08 18:13:03 → saiu 20/08 10:55:16 → voltou 20/08
+  10:56:41. Coluna: **19/08 18:13:03**;
+- `1683750`: entrou 10/03 16:22:05 → saiu 16:22:14 → voltou 16:26:03. Coluna:
+  **10/03 16:22:05**.
+
+**Sem evidência de entrada:** 0 casos nesta janela. O ramo existe e devolve
+`NULL`, mas nenhum chamado do período o exercitou.
+
+### 73.6. Documentação
+
+`docs/faia-farc-calculation.md` ganhou a linha na tabela de colunas
+compartilhadas e a seção 2.1; `docs/powerbi-query.md` passou de 29 para 30
+colunas na lista ordenada e nos demais pontos que descrevem o contrato de saída,
+ganhou a seção 6.1 e teve o item 3 da conferência ampliado para
+`Data de Abertura` ≤ `Data Entrada Grupo Decision` ≤ `Data Captura`;
+`docs/documentacao-powerbi-decision.html` acompanhou. Índices atualizados nos
+dois `.md`.
+
+---
+
+## 74. 2026-09-22 (2ª) — sincronização final da coluna `Data Entrada Grupo Decision`
+
+### 74.1. Sincronia entre as duas consultas
+
+Os três blocos que a coluna exige são **byte a byte idênticos** em
+`queries/consulta_faia_farc.sql` e `powerbi/consulta_faia_farc_power_bi.sql`:
+
+| Bloco | SHA256 (16) | Linhas |
+|---|---|---|
+| `#EntradaGrupoDecision_DEC`, em `[3.3.1]` | `25349eba4aab2cf9` | 76 |
+| Coluna do `SELECT` final | `828bfc37b3c98f60` | 10 |
+| `LEFT JOIN … AS egd` | `5e7d2ab83e1931a6` | 2 |
+
+### 74.2. Contrato de saída
+
+30 colunas. A nova ocupa a **posição 10**, logo após `Data de Abertura`. As 29
+anteriores mantêm nome, conteúdo e ordem relativa.
+
+`Data Captura` fica na posição 15, não na 11: entre as duas já existiam
+`Data de Encerramento Total do Chamado`, `Data de Encerramento Decision`,
+`Tempo Total Decision` e `Tempo suspenso`. A sequência abertura → entrada no
+grupo → captura é conceitual, não a ordem física das colunas.
+
+### 74.3. Determinismo
+
+Duas execuções da versão atual, mesma janela:
+
+- referência: mesmos SDMs, 0 linhas diferentes, **mesmo SHA256 do arquivo**;
+- painel: mesmos SDMs, 0 linhas diferentes, **mesmo SHA256 do arquivo**.
+
+### 74.4. Regressão
+
+1.478 linhas antes e depois, mesmos SDMs, nas duas consultas. Nas 29 colunas
+anteriores: **0 chamados com qualquer diferença**. Conferidas uma a uma,
+idênticas em 1.478/1.478: `Data Captura`, `nHR_FAIA`, `FAIA`, `nHR_FARC`,
+`FARC`.
+
+Painel × referência: 1.478 SDMs em comum, 0 só de um lado, 0 linhas divergentes,
+0 divergências na coluna nova.
+
+`TSql130Parser` e `TSql160Parser`: 0 erros nos dois arquivos.
+
+### 74.5. A coluna
+
+1.478 de 1.478 preenchidas. 1.429 com abertura direta (entrada = abertura) e 49
+por transferência (entrada posterior à abertura); nenhuma anterior à abertura.
+Entrada ≤ captura em 1.478 de 1.478 — resultado observado, não restrição imposta
+pela consulta.
+
+Reentrada, primeira entrada preservada: `1725544` → 19/08 18:13:03 (última seria
+20/08 10:56:41); `1683750` → 10/03 16:22:05 (última seria 16:26:03).
+
+### 74.6. Percentuais
+
+`FAIA %`, `FARC %` e `Total de Desconto (FAIA+FARC) %` continuam **não
+implementados** — a fórmula não está comprovada (§73.2). Varredura nas duas
+consultas por esses nomes, por qualquer alias contendo `%`, e por `* 100` e
+`/ 100`: nenhuma ocorrência, nenhum cálculo intermediário. `nHR_FAIA`, `FAIA`,
+`nHR_FARC` e `FARC` preservados. Nenhuma menção a percentuais em `docs/` ou
+`README.md`.
+
+### 74.7. Documentação
+
+A ordem entre entrada e captura passou a ser descrita como **resultado
+observado** no período conferido, e não como restrição da consulta, em
+`docs/faia-farc-calculation.md` (2.1) e `docs/powerbi-query.md` (6.1 e item 3 da
+Conferência). O HTML ganhou a subseção que define a coluna e a diferencia de
+`Data Captura`, no mesmo teor do Markdown.
+
+`README.md` não foi alterado: não enumera colunas, não descreve a regra de
+`Data Captura` e não cita percentuais.
+
+Permanece em `docs/powerbi-query.md`, na seção 8, a frase "0 divergências nas
+outras 28 colunas". Ela pertence ao registro de isolamento da regra de
+`Data de Encerramento Decision`, com escopo próprio (732 linhas), anterior a
+este trabalho, e não descreve o contrato de saída atual.
+
+---
+
+## 75. 2026-09-22 (3ª) — registro de regressão histórica retirado da documentação funcional
+
+Removida de `docs/powerbi-query.md` a subseção **"Isolamento comprovado"**, que
+ficava ao fim da seção 8 (`Data de Encerramento Decision`). Ela trazia o
+comparativo antes/depois daquela correção — 732 linhas, 732 SDMs, "0 divergências
+nas outras 28 colunas", "0 valores não-NULL sobrescritos" — e a lista de tempos
+que permaneceram idênticos.
+
+Motivo: é registro de desenvolvimento, e a documentação funcional descreve como a
+consulta funciona hoje. O número de colunas citado ali (28) pertencia ao escopo
+daquela comparação e não ao contrato de saída atual, de 30 colunas; retirá-lo é
+preferível a atualizá-lo, que daria ao registro um valor que ele nunca teve.
+
+Nada mais foi alterado na seção 8. O parágrafo anterior, sobre o `NULL` legítimo,
+continua encerrando a seção e já remete a este histórico para a evidência
+detalhada dos casos investigados. A subseção não constava do índice nem era
+referenciada por nenhum link.
+
+**Correção ao §74.7:** aquele item afirma que a frase "0 divergências nas outras
+28 colunas" permanece em `docs/powerbi-query.md`. Deixou de ser verdade nesta
+data. O texto do §74 fica como está, por ser registro de append-only.

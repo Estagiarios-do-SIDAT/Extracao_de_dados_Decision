@@ -871,6 +871,84 @@ OUTER APPLY (
     ORDER BY g.evento_epoch ASC, g.destino_decision DESC
 ) AS primeiro;
 
+--------------------------------------------------------------------------------
+-- [3.3.1] Entrada no grupo Fornecedores - Decision (marco de relatorio)
+--
+-- Momento em que o chamado CAIU no grupo. Vale a PRIMEIRA entrada, nunca uma
+-- reentrada posterior. E um conceito distinto de [Data Captura]: a captura e a
+-- primeira ida para 'Em andamento' e so pode ocorrer depois que o chamado ja
+-- esta no grupo, entao a entrada e sempre igual ou anterior a captura.
+--
+-- Cobre o escopo unificado (#EscopoIds_DEC), e nao apenas o escopo do FAIA, para
+-- que a coluna exista tambem nos chamados que entram somente pelo FARC.
+--
+-- Regras, na ordem:
+--   (a) sem nenhum evento de grupo -> o chamado nasceu no grupo e ali ficou,
+--       logo a entrada e a propria abertura (open_date);
+--   (b) o primeiro evento de grupo SAIU da Decision -> o chamado ja estava no
+--       grupo desde a abertura, e vale open_date;
+--   (c) caso contrario -> a menor data entre os eventos cujo destino e a
+--       Decision, ou seja #TransfGrupo_DEC.primeira_entrada_fornecedor_epoch;
+--   (d) sem evidencia de entrada -> NULL, e a coluna sai vazia.
+--
+-- E a mesma regra que ja define o inicio da contagem do FAIA, aqui calculada
+-- para todo o escopo e publicada como coluna propria. A leitura do primeiro
+-- evento usa agregacao sobre o menor segundo, e nao TOP (1) sobre uma ordenacao
+-- de chave repetida, para que o valor nao dependa da ordem fisica escolhida pelo
+-- SQL Server quando ha varios eventos no mesmo segundo.
+--
+-- Nenhuma metrica existente le esta tabela: ela so alimenta a coluna nova.
+--------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#EntradaGrupoDecision_DEC') IS NOT NULL DROP TABLE #EntradaGrupoDecision_DEC;
+
+CREATE TABLE #EntradaGrupoDecision_DEC (
+    id int NOT NULL PRIMARY KEY,
+    entrada_grupo_decision_epoch int NULL,
+    fonte_entrada_grupo_decision nvarchar(120) NOT NULL
+);
+
+INSERT INTO #EntradaGrupoDecision_DEC
+    (id, entrada_grupo_decision_epoch, fonte_entrada_grupo_decision)
+SELECT
+    e.id,
+    CASE
+        -- (a) nunca houve transferencia de grupo
+        WHEN primeiro.primeiro_epoch IS NULL THEN b.open_date
+        -- (b) o primeiro evento partiu da propria Decision
+        WHEN primeiro.origem_decision_no_primeiro = 1 THEN b.open_date
+        -- (c) primeira entrada comprovada no grupo
+        ELSE tg.primeira_entrada_fornecedor_epoch
+    END AS entrada_grupo_decision_epoch,
+    CASE
+        WHEN primeiro.primeiro_epoch IS NULL
+            THEN CONCAT(N'Chamado nasceu no grupo ', @FornecedorNome)
+        WHEN primeiro.origem_decision_no_primeiro = 1
+            THEN CONCAT(N'Chamado nasceu no grupo ', @FornecedorNome, N' e possui histórico de transferências')
+        WHEN tg.primeira_entrada_fornecedor_epoch IS NOT NULL
+            THEN CONCAT(N'Primeira transferência para ', @FornecedorGrupoNome)
+        ELSE N'Sem entrada no grupo identificada'
+    END AS fonte_entrada_grupo_decision
+FROM #EscopoIds_DEC AS e
+JOIN #Base_DEC AS b
+    ON b.id = e.id
+LEFT JOIN #TransfGrupo_DEC AS tg
+    ON tg.id = b.id
+OUTER APPLY (
+    -- Primeiro evento de grupo do chamado. Quando ha mais de um evento no mesmo
+    -- segundo, a origem conta como Decision se QUALQUER um deles partiu do
+    -- grupo - criterio fixo, independente da ordem de leitura.
+    SELECT
+        primeiro_epoch = MIN(g.evento_epoch),
+        origem_decision_no_primeiro = MAX(CONVERT(int, g.origem_decision))
+    FROM #GrupoEventos_DEC AS g
+    WHERE g.id = b.id
+      AND g.evento_epoch = (
+            SELECT MIN(g2.evento_epoch)
+            FROM #GrupoEventos_DEC AS g2
+            WHERE g2.id = b.id
+          )
+) AS primeiro;
+
 IF OBJECT_ID('tempdb..#CapturaStatusFAIA_DEC') IS NOT NULL DROP TABLE #CapturaStatusFAIA_DEC;
 
 SELECT
@@ -3883,6 +3961,17 @@ SELECT
     CASE WHEN f.open_date IS NULL THEN NULL
          ELSE DATEADD(HOUR, -@HorasBrasilParaUTC, DATEADD(SECOND, f.open_date, @Epoch))
     END AS [Data de Abertura],
+
+    -- Entrada no grupo Fornecedores - Decision: PRIMEIRA vez que o chamado caiu
+    -- no grupo. Nao substitui [Data Captura], que marca a primeira ida para
+    -- 'Em andamento' e, por definicao, vem depois.
+    CASE WHEN egd.entrada_grupo_decision_epoch IS NULL THEN NULL
+         ELSE DATEADD(
+                HOUR,
+                -@HorasBrasilParaUTC,
+                DATEADD(SECOND, egd.entrada_grupo_decision_epoch, @Epoch)
+              )
+    END AS [Data Entrada Grupo Decision],
     f.data_fechamento_cliente_br AS [Data de Encerramento Total do Chamado],
     CASE WHEN cf.encerramento_decision_epoch IS NULL THEN NULL
          ELSE DATEADD(
@@ -4000,6 +4089,8 @@ INTO #ResultadoFAIAFARC_DEC
 FROM FinalFARC AS f
 LEFT JOIN #CalcFAIA_DEC AS cf
     ON cf.id = f.id
+LEFT JOIN #EntradaGrupoDecision_DEC AS egd
+    ON egd.id = f.id
 OPTION (RECOMPILE);
 
 CREATE INDEX IX_ResultadoFAIAFARC_DEC_ordem

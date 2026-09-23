@@ -15,7 +15,7 @@ Este documento é para quem precisa **entender e conferir os números**, não pa
 ## Índice
 
 1. [O que a consulta faz](#1-o-que-a-consulta-faz)
-2. [Colunas compartilhadas](#2-colunas-compartilhadas)
+2. [Colunas compartilhadas](#2-colunas-compartilhadas) — inclui [Data Entrada Grupo Decision](#21-data-entrada-grupo-decision)
 3. [Colunas do FAIA](#3-colunas-do-faia)
 4. [Colunas do FARC](#4-colunas-do-farc)
 5. [Os três tempos que mais confundem](#5-os-três-tempos-que-mais-confundem)
@@ -52,12 +52,45 @@ São os dados do chamado. Aparecem uma vez só, mesmo quando os dois indicadores
 | `Responsável Abertura` / `Responsável Atendimento` | Quem abriu e quem atendeu |
 | `Resumo` | Título do chamado |
 | `Data de Abertura` | Abertura do chamado no SDM |
+| `Data Entrada Grupo Decision` | Quando o chamado entrou no grupo Fornecedores - Decision — ver [seção 2.1](#21-data-entrada-grupo-decision) |
 | `Data de Encerramento Total do Chamado` | Fechamento para o cliente |
 | `Data de Encerramento Decision` | Quando a Decision concluiu a atuação dela. **Não é o mesmo que o fechamento do chamado** — ver [seção 9](#9-data-de-encerramento-decision) |
 | `Data Captura` | Primeira ida para "Em andamento" |
 | `Data Resolução` | Data de resolução registrada |
 | `Indicador Reabertura` | `Sim` / `Não` |
 | `Acordo Prazo`, `Acordo Qualidade`, `Justificativa` | Reservados, sempre `-` |
+
+### 2.1 Data Entrada Grupo Decision
+
+É o momento em que o chamado **caiu no grupo Fornecedores - Decision**. Vale a
+**primeira** entrada: se o chamado saiu e voltou, a coluna continua mostrando a
+primeira vez, não a reentrada.
+
+Não se confunde com `Data Captura`, que segue a regra própria da Decision: a
+primeira ida para "Em andamento", o momento em que alguém assumiu o chamado. São
+marcos diferentes — um diz **de quem o chamado passou a ser**, o outro **quando
+começaram a trabalhar nele**.
+
+No período conferido, a entrada no grupo ocorreu antes ou no mesmo instante da
+captura em todos os chamados. A consulta, porém, não impõe essa ordem: as duas
+colunas vêm de fontes independentes, e um histórico de grupo incompleto pode
+produzir um caso fora dela.
+
+Também não se confunde com `Data de Abertura`, que é a abertura do chamado no
+SDM. Quando o chamado nasce fora da Decision e é transferido depois, a entrada é
+**posterior** à abertura — a diferença é justamente o tempo que ele passou em
+outro grupo.
+
+Os três casos possíveis:
+
+| Situação | O que a coluna mostra |
+|---|---|
+| Chamado nasceu no grupo | A própria abertura — entrada e abertura coincidem |
+| Chamado foi transferido para o grupo | A data da primeira transferência de entrada |
+| Sem registro de entrada no histórico | Vazia |
+
+A coluna é **informativa**. Nenhum tempo, meta, `nHR` ou valor de FAIA/FARC é
+calculado a partir dela.
 
 ---
 
