@@ -51,6 +51,7 @@ São os dados do chamado. Aparecem uma vez só, mesmo quando os dois indicadores
 | `Categoria` | Categoria do SDM (`Decision.*`) |
 | `Responsável Abertura` / `Responsável Atendimento` | Quem abriu e quem atendeu |
 | `Resumo` | Título do chamado |
+| `Item de Configuração` | IC associado ao chamado no SDM: o campo *Item de configuração* da tela do chamado. Vazio quando o chamado não tem IC |
 | `Data de Abertura` | Abertura do chamado no SDM |
 | `Data Entrada Grupo Decision` | Quando o chamado entrou no grupo Fornecedores - Decision — ver [seção 2.1](#21-data-entrada-grupo-decision) |
 | `Data de Encerramento Total do Chamado` | Fechamento para o cliente |

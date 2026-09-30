@@ -36,7 +36,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li><b>desempenho</b> — o painel lê o histórico de eventos uma única vez; os filtros e os textos são os mesmos.</li>
 </ul>
 <div style='background:#eaf6ec;border-left:4px solid #1a7f37;padding:10px 12px;margin:6px 0 16px 0'>
-<b>Equivalência conferida:</b> para a mesma janela, a consulta do painel e a consulta de referência devolveram <b>resultados idênticos</b> — os mesmos 1.478 chamados, as mesmas 30 colunas e nenhuma diferença em nenhum valor.
+<b>Equivalência conferida:</b> para a mesma janela, a consulta do painel e a consulta de referência devolveram <b>resultados idênticos</b> — os mesmos chamados, as mesmas 31 colunas e nenhuma diferença em nenhum valor.
 </div>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>4. Período: últimos 12 meses até hoje</h2>
@@ -61,13 +61,14 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </ul>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>6. Saída</h2>
-<p><b>Uma linha por chamado</b> (SDM), <b>30 colunas</b>, FAIA e FARC juntos. Principais:</p>
+<p><b>Uma linha por chamado</b> (SDM), <b>31 colunas</b>, FAIA e FARC juntos. Principais:</p>
 <table style='border-collapse:collapse;width:100%;margin:6px 0 10px 0'>
 <tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Grupo</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Colunas</th></tr>
-<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>Chamado</td><td style='border:1px solid #d0d7de;padding:4px 6px'>SDM, Tipo Chamado, Severidade, Status, Categoria, Data de Abertura, Data Entrada Grupo Decision, Data de Encerramento Total do Chamado, Data de Encerramento Decision</td></tr>
+<tr><td style='border:1px solid #d0d7de;padding:4px 6px'>Chamado</td><td style='border:1px solid #d0d7de;padding:4px 6px'>SDM, Tipo Chamado, Severidade, Status, Categoria, Item de Configuração, Data de Abertura, Data Entrada Grupo Decision, Data de Encerramento Total do Chamado, Data de Encerramento Decision</td></tr>
 <tr><td style='border:1px solid #d0d7de;padding:4px 6px'>FAIA</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Data Captura, Tempo Primeiro Atendimento, Meta Primeiro Atendimento, nHR_FAIA, FAIA</td></tr>
 <tr><td style='border:1px solid #d0d7de;padding:4px 6px'>FARC</td><td style='border:1px solid #d0d7de;padding:4px 6px'>Tempo Total Decision, Tempo suspenso, Tempo de Atendimento, Meta Atendimento, nHR_FARC, FARC</td></tr>
 </table>
+<p><b>Item de Configuração</b> é o IC associado ao chamado no SDM, o campo <i>Item de configuração</i> da tela do chamado. Chamado sem IC fica com a coluna vazia.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Data Entrada Grupo Decision</h3>
 <p>É a <b>primeira data/hora em que o chamado passou a pertencer ao grupo Fornecedores - Decision</b>. Se o chamado saiu do grupo e voltou depois, a coluna continua mostrando a primeira entrada, nunca a reentrada. Quando o chamado nasce no grupo, ela coincide com a Data de Abertura; quando chega por transferência, traz a data do primeiro evento de entrada. Chamado sem registro de entrada no histórico fica com a coluna vazia.</p>
@@ -120,7 +121,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li>filtros de status, categorias, grupo Fornecedores - Decision e tabelas de SLA/metas;</li>
 <li>o tratamento do histórico de eventos (act_log) — mexer ali já custou minutos de execução;</li>
 <li>a regra de Data de Encerramento Decision — não preencha vazios com a data de fechamento;</li>
-<li>as 30 colunas e a regra de uma linha por chamado.</li>
+<li>as 31 colunas e a regra de uma linha por chamado.</li>
 </ul>
 </div>
 <ul style='margin-top:4px'>

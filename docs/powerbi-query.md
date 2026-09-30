@@ -39,7 +39,7 @@ resultado do FAIA
 resultado do FARC
 ```
 
-Ela devolve **um único resultado**, com **30 colunas**. Não traz tabelas de
+Ela devolve **um único resultado**, com **31 colunas**. Não traz tabelas de
 diagnóstico nem resultados intermediários.
 
 Arquivo:
@@ -225,11 +225,11 @@ feriados do período mais antigo estão cadastrados — ver
 ```text
 1 result set
 1 linha por SDM
-30 colunas
+31 colunas
 FAIA e FARC juntos, na mesma linha
 ```
 
-As 30 colunas, na ordem em que saem:
+As 31 colunas, na ordem em que saem:
 
 | # | Coluna | Origem |
 |---|---|---|
@@ -241,28 +241,32 @@ As 30 colunas, na ordem em que saem:
 | 6 | `Responsável Abertura` | compartilhada |
 | 7 | `Responsável Atendimento` | compartilhada |
 | 8 | `Resumo` | compartilhada |
-| 9 | `Data de Abertura` | compartilhada |
-| 10 | `Data Entrada Grupo Decision` | compartilhada — ver [seção 6.1](#61-data-entrada-grupo-decision) |
-| 11 | `Data de Encerramento Total do Chamado` | compartilhada |
-| 12 | `Data de Encerramento Decision` | compartilhada — ver [seção 8](#8-data-de-encerramento-decision) |
-| 13 | `Tempo Total Decision` | compartilhada |
-| 14 | `Tempo suspenso` | compartilhada |
-| 15 | `Data Captura` | FAIA |
-| 16 | `Tempo Primeiro Atendimento` | FAIA |
-| 17 | `Primeiro Atendimento Excedido` | FAIA |
-| 18 | `Meta Primeiro Atendimento` | FAIA |
-| 19 | `Indicador Reabertura` | FAIA |
-| 20 | `Acordo Prazo` | FAIA (reservada, sempre `-`) |
-| 21 | `Acordo Qualidade` | FAIA (reservada, sempre `-`) |
-| 22 | `Justificativa` | FAIA (reservada, sempre `-`) |
-| 23 | `nHR_FAIA` | FAIA |
-| 24 | `FAIA` | FAIA |
-| 25 | `Data Resolução` | FARC |
-| 26 | `Tempo de Atendimento` | FARC |
-| 27 | `Tempo Atendimento Excedido` | FARC |
-| 28 | `Meta Atendimento` | FARC |
-| 29 | `nHR_FARC` | FARC |
-| 30 | `FARC` | FARC |
+| 9 | `Item de Configuração` | compartilhada |
+| 10 | `Data de Abertura` | compartilhada |
+| 11 | `Data Entrada Grupo Decision` | compartilhada — ver [seção 6.1](#61-data-entrada-grupo-decision) |
+| 12 | `Data de Encerramento Total do Chamado` | compartilhada |
+| 13 | `Data de Encerramento Decision` | compartilhada — ver [seção 8](#8-data-de-encerramento-decision) |
+| 14 | `Tempo Total Decision` | compartilhada |
+| 15 | `Tempo suspenso` | compartilhada |
+| 16 | `Data Captura` | FAIA |
+| 17 | `Tempo Primeiro Atendimento` | FAIA |
+| 18 | `Primeiro Atendimento Excedido` | FAIA |
+| 19 | `Meta Primeiro Atendimento` | FAIA |
+| 20 | `Indicador Reabertura` | FAIA |
+| 21 | `Acordo Prazo` | FAIA (reservada, sempre `-`) |
+| 22 | `Acordo Qualidade` | FAIA (reservada, sempre `-`) |
+| 23 | `Justificativa` | FAIA (reservada, sempre `-`) |
+| 24 | `nHR_FAIA` | FAIA |
+| 25 | `FAIA` | FAIA |
+| 26 | `Data Resolução` | FARC |
+| 27 | `Tempo de Atendimento` | FARC |
+| 28 | `Tempo Atendimento Excedido` | FARC |
+| 29 | `Meta Atendimento` | FARC |
+| 30 | `nHR_FARC` | FARC |
+| 31 | `FARC` | FARC |
+
+`Item de Configuração` é o IC associado ao chamado no SDM — o campo *Item de
+configuração* da tela do chamado. Chamado sem IC fica com a coluna vazia.
 
 Um chamado que exista só no escopo do FARC aparece com as colunas do FAIA
 **vazias** — ele não some do resultado.
@@ -311,7 +315,7 @@ O recorte por G1, G2, SAN, Servidores ou LibQuantum, que na manual é feito por
 flags, no Power BI é feito **no próprio painel**, pela coluna `Categoria`, que já
 vem no resultado.
 
-Não há diferença funcional entre as duas para nenhuma das 30 colunas.
+Não há diferença funcional entre as duas para nenhuma das 31 colunas.
 
 As diferenças de texto entre os dois arquivos são de três tipos, nenhum deles de
 regra:
@@ -473,7 +477,7 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   inteiro.
 - **Mudanças no tratamento de `act_log` devem preservar o desempenho.**
   Reintroduzir leitura crua da tabela já custou minutos de execução uma vez.
-- **Manter 30 colunas e uma linha por SDM.** Toda tabela que pode multiplicar
+- **Manter 31 colunas e uma linha por SDM.** Toda tabela que pode multiplicar
   linhas é agregada antes da junção final; alterar isso quebra o contrato de
   saída.
 - **Preservar a equivalência funcional com a consulta manual.** As duas devem

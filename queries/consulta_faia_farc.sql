@@ -3955,6 +3955,9 @@ SELECT
     f.responsavel_abertura AS [Responsável Abertura],
     f.responsavel_atendimento AS [Responsável Atendimento],
     LTRIM(RTRIM(f.summary_txt)) AS [Resumo],
+    -- Item de configuracao do chamado, o campo 'Item de configuracao' da tela
+    -- do SDM: call_req.affected_rc -> ca_owned_resource. Sem IC, NULL.
+    own_ic.resource_name AS [Item de Configuração],
 
     -- Datas: abertura original, close_date total e ultimo marco comprovado de
     -- entrada em homologacao (ST/NOVO, SOLN implicito ou LOG especial).
@@ -4091,6 +4094,13 @@ LEFT JOIN #CalcFAIA_DEC AS cf
     ON cf.id = f.id
 LEFT JOIN #EntradaGrupoDecision_DEC AS egd
     ON egd.id = f.id
+-- Item de configuracao. As duas juncoes usam a chave primaria do lado direito
+-- (call_req.id e ca_owned_resource.own_resource_uuid): no maximo um IC por
+-- chamado, sem multiplicar linha.
+LEFT JOIN dbo.call_req AS cr_ic
+    ON cr_ic.id = f.id
+LEFT JOIN dbo.ca_owned_resource AS own_ic
+    ON own_ic.own_resource_uuid = cr_ic.affected_rc
 OPTION (RECOMPILE);
 
 CREATE INDEX IX_ResultadoFAIAFARC_DEC_ordem
