@@ -1849,8 +1849,9 @@ CREATE UNIQUE CLUSTERED INDEX IX_TotaisPosse_DEC_persid
 -- [8.2] Segmentos de status: o DESTINO do evento vale ate o proximo evento
 --
 -- ST continua sendo a fonte principal. CL tambem e lido quando sua descricao traz
--- uma transicao textual real. Como o SDM nao gera ST para a ida a homologacao,
--- cada SOLN valido produz um evento implicito com destino "Em homologacao". Na
+-- uma transicao textual real; RO grava a reabertura ('X' -> 'Reaberto') e RE, a
+-- ida para homologacao. Quando a homologacao nao vem como ST/RE, cada SOLN valido
+-- produz um evento implicito com destino "Em homologacao". Na
 -- excecao comprovada de Producao de relatorios, o LOG de conclusao real
 -- substitui o SOLN generico posterior.
 --
@@ -1888,11 +1889,9 @@ CROSS APPLY (
         ELSE 0
     END
 ) AS ancora
--- Reaberto (2026-10-06): RO grava a reabertura ('X' -> 'Reaberto'); o RE que
--- parte de 'Reaberto' encerra o trecho reaberto. Sem ele, 'Reaberto' (ativo)
--- correria ate o proximo ST/CL.
-WHERE (   al.type IN ('ST', 'CL', 'RO')
-       OR (al.type = 'RE' AND txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%alterado de ''Reaberto''%'))
+-- RE: sem ele, o status anterior a homologacao ('Em andamento', ativo) seguia
+-- correndo ate o proximo ST/CL, em geral o encerramento do chamado.
+WHERE al.type IN ('ST', 'CL', 'RO', 'RE')
   AND al.system_time IS NOT NULL
   AND ancora.posicao > 0
   AND b.open_date IS NOT NULL
@@ -2252,13 +2251,17 @@ CREATE INDEX IX_Encerramento_DEC_id ON #Encerramento_DEC(id);
 --   ENTRADA_homolog_por_RE   >= 1   nos 32
 --   QtdSOLN = 0 e QtdSRVY_SENT = 0  nos 32
 --   Nesses chamados o SDM gravou a entrada em 'Em homologacao' como
---   act_log.type = 'RE'. Como [8.2] le apenas 'ST' e 'CL', nenhum marco
+--   act_log.type = 'RE'. Quando [8.2] lia apenas 'ST' e 'CL', nenhum marco
 --   existia e [Data de Encerramento Decision] saia NULL.
 --
 -- E FALLBACK, NAO SUBSTITUTO:
 --   so entram chamados cujo #Encerramento_DEC ficou NULL. Valor ja obtido
---   por ST/CL/SOLN/LOG e PRESERVADO e nunca sobrescrito. E por isso que
+--   por ST/CL/SOLN/LOG/RE e PRESERVADO e nunca sobrescrito. E por isso que
 --   chamados como o 1710057, que ja tem marco por SOLN, nao se movem.
+--
+-- Desde 2026-10-06 [8.2] le 'RE', e [8.3] ja encontra a entrada em
+-- homologacao gravada como 'RE' (fonte_evento = 'RE'). Este bloco fica como
+-- rede de seguranca e nao muda nenhum valor nas populacoes atuais.
 --
 -- MESMAS REGRAS, NADA INVENTADO:
 --   mesmo parser de origem/destino de [8.2] (ancora 'alterado de' /

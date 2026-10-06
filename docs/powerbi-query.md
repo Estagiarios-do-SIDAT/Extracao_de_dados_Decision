@@ -354,10 +354,16 @@ O marco da Decision é a **entrada em "Em homologação"**: o momento em que a
 equipe terminou o trabalho e entregou o chamado para homologação. A consulta
 reconhece esse marco a partir dos eventos do `act_log`.
 
-### O fallback por evento `RE`
+### Entrada em homologação gravada como `RE`
 
 Alguns chamados registram a entrada em "Em homologação" com um tipo de evento
-diferente do usual. A regra vigente é:
+diferente do usual (`RE`). A linha de status lê esse evento, e o marco é
+reconhecido como qualquer outra entrada em homologação: vale a última
+**entrada** em posse da Decision. Um `SOLN` posterior, com o chamado já em
+homologação, não é nova entrada.
+
+O fallback abaixo, criado quando a linha de status ainda não lia `RE`, continua
+na consulta como rede de segurança:
 
 ```text
 Se a lógica original já encontrou um encerramento válido:

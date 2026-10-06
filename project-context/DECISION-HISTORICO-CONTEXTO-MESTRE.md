@@ -25128,3 +25128,48 @@ Validação contra `9c35c5b`, rodando as duas versões no mesmo momento:
 
 Nenhum excesso, `Meta Atendimento`, `nHR_FARC` ou FARC mudou. A pendência 76.4-2
 (`RE` fora do motor [8] em 45 chamados) continua registrada e sem alteração.
+
+## 77. 2026-10-06 — Tempo Total Decision lê `RE`
+
+Defeito (pendência 76.4-2): o motor do `Tempo Total Decision` ([8.2]) lia só
+`ST`/`CL`/`RO` e o `RE` que sai de "Reaberto". Quando a ida para homologação
+vinha só como `RE` (sem `SOLN` no mesmo instante), o "Em andamento" anterior
+seguia ativo até o próximo `ST`/`CL`, em geral o encerramento do chamado. A
+própria `Data de Encerramento Decision` desses chamados já era o `RE` (fallback
+[8.3.1]), ou seja, o motor reconhecia a homologação e mesmo assim seguia
+contando.
+
+Auditoria de 11 casos: em todos, a redução é exatamente o intervalo `RE` → `CL`
+(corrido nas P1/P2, horas comerciais nas P3).
+
+| SDM | `RE` | `CL` | `Tempo Total Decision` |
+|---|---|---|---|
+| 1665065 | 17/12/2025 02:03:54 | 29/01/2026 08:17:10 | 1038:53:37 → 0:40:21 |
+| 1666596 | 25/12/2025 15:37:32 | 19/01/2026 18:42:13 | 604:02:50 → 0:58:09 |
+| 1666598 | 25/12/2025 18:15:05 | 19/01/2026 18:42:14 | 602:29:10 → 2:02:01 |
+| 1677811 | 13/02/2026 23:58:05 | 20/02/2026 13:23:17 | 158:43:57 → 1:18:45 |
+| 1734049 | 22/09/2026 20:37:08 | 29/09/2026 08:08:48 | 157:20:07 → 1:48:27 |
+| 1646923 (P3) | sex 07/11/2025 18:24:22 | seg 10/11/2025 08:19:05 | −1:54:43 (1:35:38 + 0:19:05 comerciais) |
+| 1710627 | 22/06/2026 13:52:08 | 22/06/2026 14:06:29 | 2:25:27 → 2:11:06 |
+
+Os outros casos auditados foram 1662528, 1666343, 1725544 e 1715243.
+
+Correção: [8.2] lê `ST`, `CL`, `RO` e `RE`, na consulta e no painel.
+
+Efeito no painel de 12 meses (1.489 chamados), contra `da77481`:
+
+- população idêntica;
+- `Tempo Total Decision`: 64 chamados, −6.714:54:13 no total (maior: 1665065,
+  −1038:13:16);
+- `Tempo suspenso`: 66 chamados, +11.082:12:52. Em 2 deles o trecho caía fora
+  do horário comercial e não mexia no Tempo Total;
+- `Data de Encerramento Decision`: 1 chamado (1664791, de 17/12 19:09:14 para
+  16/12 20:08:56). Ele entrou em homologação pelo `RE`; o `SOLN` seguinte não é
+  novo encerramento;
+- `Tempo de Atendimento`, excesso, meta, nHR_FARC, FARC e FAIA: 0 mudanças;
+- Power BI x consulta: consulta individual (1.012 chamados) idêntica ao painel nos chamados em comum, em todas as colunas.
+
+Pendência nova, registrada e não corrigida: o motor do FARC ([9.2]) também não
+lê `RE`. Lendo-o, 26 chamados teriam `Tempo de Atendimento` menor (−41:35:07 no
+total; ex.: 1664791, 33:09:15 → 10:08:57). Só 1 FARC mudaria, na 2ª casa
+(1676350, 17,01 → 17,00), e nenhuma meta.
