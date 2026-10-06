@@ -25173,3 +25173,32 @@ Pendência nova, registrada e não corrigida: o motor do FARC ([9.2]) também n�
 lê `RE`. Lendo-o, 26 chamados teriam `Tempo de Atendimento` menor (−41:35:07 no
 total; ex.: 1664791, 33:09:15 → 10:08:57). Só 1 FARC mudaria, na 2ª casa
 (1676350, 17,01 → 17,00), e nenhuma meta.
+
+## 78. 2026-10-06 — avaliação dos status `hold = 0`
+
+Critério (decisão do usuário): um status com `cr_stat.hold = 0` que hoje não
+conta só entra na lista de ativos se, em todos os projetos onde ocorrer:
+
+1. aumentar o tempo agregado em até 2%;
+2. aumentar o FARC agregado em até 1%;
+3. não levar nenhum chamado de Atende para Não Atende;
+4. não acrescentar mais de 4 h a nenhum chamado;
+5. não mudar a população;
+6. não for terminal, administrativo, de problema/mudança nem de outra entidade;
+7. representar uma condição operacional do chamado.
+
+A lista continua explícita, e não o `hold` dinâmico.
+
+"Aguarda atendimento" (`REOP`) foi **reprovado** em todos os projetos, contra
+as versões publicadas:
+
+| Projeto | Tempo | FARC | Atende → Não Atende | Maior delta |
+|---|---|---|---|---|
+| Virtual | +1,76% / +2,00% | +0,22% | 0 | **+115:17** |
+| Decision | +1,14% | **+11,98%** | **1** | **+56:04** |
+| A2B | **+17,05%** | **+238,5%** (38,33 → 129,76) | **12** | **+40:39** |
+
+Na Decision, "Aguarda atendimento" já contava no `Tempo Total Decision`
+(`#RegrasStatus_DEC`) e continua contando; no FARC ([9.2]) continua fora.
+Nenhum outro status `hold = 0` do chamado ocorre na população. Os terminais e
+administrativos, os de problema/mudança e os de RDM ficam fora pelo critério 6.

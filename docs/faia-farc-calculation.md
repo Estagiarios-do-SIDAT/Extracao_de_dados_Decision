@@ -135,6 +135,12 @@ Rotinas (checklists, produção de relatórios, documentação) usam um motor pr
 | "Aguarda atendimento" | conta | pausa |
 | demais (Agendado, Em homologação, Aguardando fornecedor...) | pausa | pausa |
 
+As duas listas são explícitas, e não o campo `cr_stat.hold`: o cadastro também
+marca com `hold = 0` status terminais, administrativos e de problema/mudança,
+que não são atendimento. "Aguarda atendimento" tem `hold = 0` e não conta no
+FARC: foi avaliado e reprovado pelo impacto (em 12 meses, FARC total +11,98% e
+um chamado de "Atende" para "Não Atende"; até +56 h num único chamado).
+
 "Reaberto" conta por orientação do gerente (2026-10-06). Quando o analista encerra o chamado por engano como "Resolvido, concluído", o correto é reabrir e pôr o status certo, e esse tempo é de atendimento. O SDM grava a reabertura como evento `RO` ("Resolvido, concluído" → "Reaberto"), lido pelos dois motores. No `Tempo Total Decision`, a ida para homologação gravada como `RE` ("Em andamento" → "Em homologação") também é lida. Assim o trecho ativo termina na homologação e não segue até o fechamento do chamado.
 
 **Último ciclo.** O `Tempo de Atendimento` acompanha todos os ciclos de atuação da Decision. Sem reabertura, termina no primeiro `SOLN`, como sempre. Quando o chamado é reaberto depois desse encerramento, o terminal passa a ser o primeiro encerramento depois da **última** reabertura: um `SOLN` ou uma entrada em "Em homologação". Sem esse encerramento, vale a `Data Resolução`; sem ela, o fechamento.

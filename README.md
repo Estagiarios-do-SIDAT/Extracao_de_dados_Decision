@@ -104,7 +104,7 @@ A pasta `support/` contém consultas auxiliares usadas durante análise e depura
 |---|---|
 | `support/consulta_logs_chamados_listados.sql` | Lista todos os logs dos chamados informados |
 | `support/consulta_status_chamados.sql` | Lista os status cadastrados no SDM |
-| `support/consulta_status_hold.sql` | Mostra cada status e o flag `cr_stat.hold`, que indica se ele para o relógio do SLA |
+| `support/consulta_status_hold.sql` | Mostra cada status e o flag `cr_stat.hold`, que indica se ele para o relógio do SLA. Os cálculos não usam esse flag: os status que contam são listas explícitas (ver [cálculo do FAIA e do FARC](docs/faia-farc-calculation.md)) |
 | `support/consulta_tipos_chamado.sql` | Lista os tipos de chamado e suas quantidades |
 
 Essas consultas não calculam FAIA nem FARC. Elas servem para investigar chamados, conferir códigos e entender registros da base.
