@@ -1617,6 +1617,68 @@ OUTER APPLY (
 CREATE UNIQUE CLUSTERED INDEX IX_TerminalFARC_DEC_id ON #TerminalFARC_DEC(id);
 
 --------------------------------------------------------------------------------
+-- [7.0.1] Terminal do ULTIMO ciclo  (orientacao do gerente, 2026-10-06)
+--
+-- Reabertura corrige um encerramento indevido: o Tempo de Atendimento acompanha
+-- todos os ciclos e termina no encerramento do ultimo. Quando ha reabertura
+-- (destino 'Reaberto') no instante do terminal acima ou depois dele, o terminal
+-- passa a ser o primeiro encerramento depois da ULTIMA reabertura: um SOLN ou
+-- uma entrada em 'Em homologacao'. Sem esse encerramento, vale resolve_date (se
+-- posterior a reabertura); senao, close_date. Os eventos sao lidos a partir do
+-- inicio da contagem (ultima entrada no grupo), ou seja, dentro da posse.
+-- O intervalo SOLN -> reabertura nao conta: o SOLN pausa o motor [9.2].
+--------------------------------------------------------------------------------
+UPDATE t
+SET terminal_epoch = COALESCE(
+        fe.fechamento_epoch,
+        CASE WHEN b.resolve_date >= rb.reabertura_epoch THEN b.resolve_date END,
+        b.close_date),
+    fonte_terminal = CASE
+        WHEN fe.fechamento_epoch IS NOT NULL THEN N'Encerramento do último ciclo (após reabertura)'
+        WHEN b.resolve_date >= rb.reabertura_epoch THEN N'resolve_date do último ciclo (após reabertura)'
+        ELSE N'close_date - último ciclo sem encerramento (após reabertura)'
+    END
+FROM #TerminalFARC_DEC AS t
+JOIN #Base_DEC AS b
+    ON b.id = t.id
+JOIN #InicioContagemFARC_DEC AS ic
+    ON ic.id = t.id
+CROSS APPLY (
+    SELECT MAX(al.system_time) AS reabertura_epoch
+    FROM dbo.act_log AS al
+    CROSS APPLY (
+        SELECT texto_log =
+            CONVERT(nvarchar(max), ISNULL(al.description, N'')) + N' ' +
+            CONVERT(nvarchar(max), ISNULL(al.action_desc,  N''))
+    ) AS txt
+    WHERE al.call_req_id = b.persid
+      AND al.system_time IS NOT NULL
+      AND ic.inicio_contagem_epoch IS NOT NULL
+      AND al.system_time >= ic.inicio_contagem_epoch
+      AND (b.close_date IS NULL OR al.system_time <= b.close_date)
+      AND (   txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%alterado de%para ''Reaberto''%'
+           OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%changed from%to ''Reopened''%')
+) AS rb
+OUTER APPLY (
+    SELECT MIN(al.system_time) AS fechamento_epoch
+    FROM dbo.act_log AS al
+    CROSS APPLY (
+        SELECT texto_log =
+            CONVERT(nvarchar(max), ISNULL(al.description, N'')) + N' ' +
+            CONVERT(nvarchar(max), ISNULL(al.action_desc,  N''))
+    ) AS txt
+    WHERE al.call_req_id = b.persid
+      AND al.system_time IS NOT NULL
+      AND al.system_time > rb.reabertura_epoch
+      AND (b.close_date IS NULL OR al.system_time <= b.close_date)
+      AND (   al.type = 'SOLN'
+           OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%alterado de%para ''Em homologação''%')
+) AS fe
+WHERE rb.reabertura_epoch IS NOT NULL
+  AND t.terminal_epoch IS NOT NULL
+  AND rb.reabertura_epoch >= t.terminal_epoch;
+
+--------------------------------------------------------------------------------
 -- [7.1] Base final do FAIA, com datas em horario do Brasil
 -- Contem SOMENTE os chamados do escopo FAIA, exatamente como antes.
 --------------------------------------------------------------------------------
@@ -1791,7 +1853,7 @@ FROM #BaseEscopoFARC_DEC AS b
 JOIN dbo.act_log AS al
     ON al.call_req_id = b.persid
 WHERE al.system_time IS NOT NULL
-  AND al.[type] IN ('ST', 'CL', 'SOLN', 'LOG', 'SRVY_SENT', 'RE');
+  AND al.[type] IN ('ST', 'CL', 'SOLN', 'LOG', 'SRVY_SENT', 'RE', 'RO');
 
 CREATE CLUSTERED INDEX IX_AtosDEC_id_tipo_epoch
     ON #AtosDEC(id, [type], system_time);
@@ -2038,7 +2100,11 @@ CROSS APPLY (
         ELSE 0
     END
 ) AS ancora
-WHERE al.type IN ('ST', 'CL')
+-- Reaberto (2026-10-06): RO grava a reabertura ('X' -> 'Reaberto'); o RE que
+-- parte de 'Reaberto' encerra o trecho reaberto. Sem ele, 'Reaberto' (ativo)
+-- correria ate o proximo ST/CL.
+WHERE (   al.type IN ('ST', 'CL', 'RO')
+       OR (al.type = 'RE' AND txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%alterado de ''Reaberto''%'))
   AND al.system_time IS NOT NULL
   AND ancora.posicao > 0
   AND b.open_date IS NOT NULL
@@ -3522,7 +3588,7 @@ IF OBJECT_ID('tempdb..#StatusEventosFARC_DEC') IS NOT NULL DROP TABLE #StatusEve
             CONVERT(nvarchar(max), ISNULL(al.action_desc,  N''))
     ) AS txt
     WHERE al.system_time IS NOT NULL
-      AND al.type = 'ST'
+      AND al.type IN ('ST', 'RO') -- RO = reabertura ('X' -> 'Reaberto')
       AND b.inicio_contagem_epoch IS NOT NULL
       AND al.system_time >= b.inicio_contagem_epoch
       AND b.fechamento_decision_epoch IS NOT NULL
@@ -3562,10 +3628,13 @@ SELECT
           OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%NOVO=''Em andamento''%'
           OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%New Value=''In Progress''%'
           OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%para ''Aberto, aguarda atendimento''%'
+          -- Reaberto conta como atendimento (orientacao do gerente, 2026-10-06).
+          OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%para ''Reaberto''%'
+          OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%to ''Reopened''%'
             THEN 1
         ELSE 0
     END AS bit) AS ativo,
-    CONVERT(tinyint, 1) AS ordem_evento
+    CONVERT(tinyint, 2) AS ordem_evento
 FROM #BaseEscopoFARC_DEC AS b
 JOIN dbo.act_log AS al
     ON al.call_req_id = b.persid
@@ -3575,11 +3644,31 @@ CROSS APPLY (
         CONVERT(nvarchar(max), ISNULL(al.action_desc,  N''))
 ) AS txt
 WHERE al.system_time IS NOT NULL
-  AND al.type = 'ST'
+  AND al.type IN ('ST', 'RO')
   AND b.inicio_contagem_epoch IS NOT NULL
   AND al.system_time >= b.inicio_contagem_epoch
   AND b.fechamento_decision_epoch IS NOT NULL
-  AND al.system_time <= b.fechamento_decision_epoch;
+  AND al.system_time <= b.fechamento_decision_epoch
+
+UNION ALL
+
+-- SOLN (2026-10-06): a solucao registrada encerra o trecho ativo; o chamado fica
+-- parado ate o proximo evento de status (a reabertura volta a contar). No mesmo
+-- segundo, o SOLN vem antes dos ST/RO (ordem_evento 1 x 2).
+SELECT
+    b.id,
+    al.system_time AS evento_epoch,
+    CAST(0 AS bit) AS ativo,
+    CONVERT(tinyint, 1) AS ordem_evento
+FROM #BaseEscopoFARC_DEC AS b
+JOIN dbo.act_log AS al
+    ON al.call_req_id = b.persid
+WHERE al.system_time IS NOT NULL
+  AND al.type = 'SOLN'
+  AND b.inicio_contagem_epoch IS NOT NULL
+  AND al.system_time >= b.inicio_contagem_epoch
+  AND b.fechamento_decision_epoch IS NOT NULL
+  AND al.system_time < b.fechamento_decision_epoch;
 
 CREATE INDEX IX_StatusEventosFARC_DEC_id_time
     ON #StatusEventosFARC_DEC(id, evento_epoch, ordem_evento);

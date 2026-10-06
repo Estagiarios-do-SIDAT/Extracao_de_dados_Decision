@@ -25037,3 +25037,94 @@ referenciada por nenhum link.
 **Correção ao §74.7:** aquele item afirma que a frase "0 divergências nas outras
 28 colunas" permanece em `docs/powerbi-query.md`. Deixou de ser verdade nesta
 data. O texto do §74 fica como está, por ser registro de append-only.
+
+## 76. 2026-10-06 — "Reaberto" passa a contar (orientação do gerente)
+
+Orientação do gerente sobre o SDM 1710057, posterior e prevalente: "Reaberto
+deve ser contado sim. Muitas vezes os analistas encerram chamados como
+'Resolvido, concluído' por engano, quando deveriam encerrar como 'Em
+homologação'. O correto é reabrir o chamado e inserir o status correto. [...]
+Em resumo, conta o tempo sim."
+
+### 76.1. Auditoria (antes)
+
+| Motor | "Reaberto" ativo? | Lia o evento de reabertura? |
+|---|---|---|
+| [8] `Tempo Total Decision` / `Tempo suspenso` (`#RegrasStatus_DEC`) | sim (allowlist) | não: lia só `ST`/`CL`; o `RO` e o `RE` ficavam de fora |
+| [9.2] `Tempo de Atendimento` / FARC (`#StatusEventosFARC_DEC`) | não (só "Em andamento" e "Aberto, aguarda atendimento") | não: lia só `ST` |
+| [9.1] rotina | intervalo menos suspensos de [9.2] | segue [9.2] |
+
+Na prática, "Reaberto" só contava quando a reabertura vinha por `ST` (ex.:
+"Em homologação pelo fiscal" → "Reaberto").
+
+### 76.2. Mudança
+
+- [9.2]: destino "Reaberto"/"Reopened" ativo; lê `ST` e `RO`. O suspenso das
+  rotinas ([9.2.1]) é o complemento do mesmo [9.2] e acompanha.
+- [8.2]: lê também `RO` e o `RE` que parte de "Reaberto". Sem o `RE`, o
+  "Reaberto" (ativo) correria até o próximo `ST`/`CL`. Variante testada só com
+  `RO`: 1710057 iria de 0:54:08 para 134:40:58.
+- Power BI: as mesmas mudanças, mais `RO` na lista de tipos de `#AtosDEC`.
+
+### 76.3. Validação (fechamentos de 31/01 a 31/12/2026, 1.006 chamados)
+
+- População idêntica.
+- Só 1710057 mudou:
+  - `Tempo Total Decision` 0:54:08 → 0:54:25 (+17 s: `RO` 18:27:07 → `RE`
+    18:27:24);
+  - `Tempo suspenso` 133:47:25 → 133:47:08;
+  - `Data de Encerramento Decision` 18:26:32 (`SOLN`) → 18:27:24, a
+    homologação depois da reabertura.
+- `Tempo de Atendimento`, excesso, `Meta Atendimento`, `nHR_FARC` e FARC: 0
+  mudanças.
+- Power BI x consulta: 1.006 chamados em comum, 0 diferenças nas 31 colunas.
+
+### 76.4. Pendências registradas, sem alteração
+
+1. **Terminal do FARC.** O `Tempo de Atendimento` termina no primeiro `SOLN`
+   ([7], validado com o relatório do fornecedor). Por isso os 17 s de 1710057
+   (posteriores ao `SOLN`) não entram no FARC. Contá-los exigiria mudar o
+   terminal para o encerramento do último ciclo, o que é uma regra nova.
+2. **`RE` fora do motor [8].** Lendo todos os `RE` (não só os que saem de
+   "Reaberto"), 45 chamados sem reabertura teriam `Tempo Total Decision` menor
+   (−3.140 h no total; ex.: 1677811 −157:25:12) e 47 teriam `Tempo suspenso`
+   maior. Neles a ida para homologação foi gravada só como `RE`, e o motor [8]
+   segue contando "Em andamento" até o `CL`. Não afeta FAIA nem FARC, mas é um
+   defeito independente das colunas `Tempo Total Decision`/`Tempo suspenso`.
+
+### 76.5. Terminal do último ciclo e SOLN como pausa (pendência 76.4-1 resolvida)
+
+Decisão do usuário: o `Tempo de Atendimento` acompanha todos os ciclos válidos e
+termina no encerramento do último. Ela prevalece sobre o terminal "primeiro
+`SOLN`" de [7] quando há reabertura posterior.
+
+- **[7.0.1]:** se houver reabertura (destino "Reaberto", em `description` ou
+  `action_desc`) no instante do terminal de [7] ou depois dele, o terminal
+  passa a ser o primeiro encerramento depois da **última** reabertura: um `SOLN`
+  ou uma entrada em "Em homologação". Sem esse encerramento, vale
+  `resolve_date` (se posterior à reabertura); senão, `close_date`. Os eventos
+  são lidos a partir do início da contagem (última entrada), portanto dentro
+  da posse.
+- **[9.2]:** o `SOLN` entra como evento inativo (ordem 1, antes dos `ST`/`RO` no
+  mesmo segundo). O trecho `SOLN → RO` não conta; "Reaberto" conta. O suspenso
+  das rotinas ([9.2.1]) acompanha.
+
+Na história inteira da Decision (fechamentos desde 2025), só 2 chamados têm
+reabertura depois de um `SOLN`:
+
+| SDM | Ciclos | `SOLN → RO` (não conta) | "Reaberto" (conta) | Tempo de Atendimento | FARC |
+|---|---|---|---|---|---|
+| 1710057 (P1) | `SOLN` 18:26:32, `RO` 18:27:07, `RE` 18:27:24 | 35 s | 17 s | 0:51:05 → 0:51:22 (+17 s) | 0 → 0 |
+| 1613187 (P3) | `SOLN` 17:07:48, `RO` 17:10:06, "Em andamento" 17:10:27, `SOLN` 18:03:05 | 2:18 | 21 s | 1:08:09 → 2:01:08 (+21 s + 52:38 do 2º ciclo) | 0 → 0 |
+
+Validação contra `9c35c5b`, rodando as duas versões no mesmo momento:
+
+- fechamentos de 2026: 1.010 chamados, população idêntica; só 1710057 mudou
+  (`Tempo de Atendimento` +17 s, `Tempo Total Decision` +17 s, `Tempo suspenso`
+  −17 s, `Data de Encerramento Decision` 18:27:24);
+- maio/2025: 162 chamados; só 1613187 mudou;
+- Power BI de 12 meses x Power BI publicado: só 1710057 mudou;
+- Power BI x consulta: 1.010 chamados em comum, 0 diferenças.
+
+Nenhum excesso, `Meta Atendimento`, `nHR_FARC` ou FARC mudou. A pendência 76.4-2
+(`RE` fora do motor [8] em 45 chamados) continua registrada e sem alteração.

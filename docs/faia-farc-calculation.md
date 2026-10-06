@@ -125,6 +125,33 @@ O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, i
 
 Rotinas (checklists, produção de relatórios, documentação) usam um motor próprio, que mede o intervalo da abertura até o encerramento da Decision e **desconta os períodos suspensos**. Os demais chamados usam o motor de status, que soma apenas os intervalos em que o chamado esteve realmente ativo.
 
+**Status ativos.** Conta-se só o tempo de posse da Decision nestes status:
+
+| Status | `Tempo Total Decision` | `Tempo de Atendimento` (FARC) |
+|---|---|---|
+| "Em andamento" | conta | conta |
+| "Aberto, aguarda atendimento" | conta | conta |
+| "Reaberto" | conta | conta |
+| "Aguarda atendimento" | conta | pausa |
+| demais (Agendado, Em homologação, Aguardando fornecedor...) | pausa | pausa |
+
+"Reaberto" conta por orientação do gerente (2026-10-06). Quando o analista encerra o chamado por engano como "Resolvido, concluído", o correto é reabrir e pôr o status certo, e esse tempo é de atendimento. O SDM grava a reabertura como evento `RO` ("Resolvido, concluído" → "Reaberto"), lido pelos dois motores. No `Tempo Total Decision`, a saída de "Reaberto" gravada como `RE` ("Reaberto" → "Em homologação") também é lida.
+
+**Último ciclo.** O `Tempo de Atendimento` acompanha todos os ciclos de atuação da Decision. Sem reabertura, termina no primeiro `SOLN`, como sempre. Quando o chamado é reaberto depois desse encerramento, o terminal passa a ser o primeiro encerramento depois da **última** reabertura: um `SOLN` ou uma entrada em "Em homologação". Sem esse encerramento, vale a `Data Resolução`; sem ela, o fechamento.
+
+**SOLN → reabertura é pausa.** O `SOLN` encerra o trecho ativo, e o chamado fica parado até a reabertura (`RO`); "Reaberto" volta a contar. Exemplo: 1710057.
+
+| Instante | Evento | Conta? |
+|---|---|---|
+| 18:26:32 | `SOLN` | até aqui conta |
+| 18:26:32 → 18:27:07 | "Resolvido, concluído" | não (35 s) |
+| 18:27:07 → 18:27:24 | "Reaberto" | sim (17 s) |
+| 18:27:24 | `RE` → "Em homologação" | encerramento do último ciclo |
+
+O resultado é `Tempo de Atendimento` 0:51:05 → 0:51:22 e `Tempo Total Decision` +17 s.
+
+O `Indicador Reabertura` continua só indicando que houve reabertura; não soma tempo.
+
 ---
 
 ## 5. Os três tempos que mais confundem
@@ -145,7 +172,7 @@ São três colunas parecidas e **não intercambiáveis**:
 
 Quando o atendente registra a solução, o SDM grava um evento **`SOLN`**. Logo depois, o sistema dispara a pesquisa de satisfação e grava um **`SRVY_SENT`**. Entre os dois passam alguns segundos.
 
-O problema: o marco de encerramento do FARC é o **próprio `SOLN`**. Ou seja, o envio da pesquisa acontece **depois** do fim da janela medida, e por isso esses segundos não entravam no `Tempo de Atendimento` — embora já entrassem no `Tempo suspenso`.
+O problema: o marco de encerramento do FARC é o **próprio `SOLN`** (o do último ciclo, quando há reabertura). Ou seja, o envio da pesquisa acontece **depois** do fim da janela medida, e por isso esses segundos não entravam no `Tempo de Atendimento` — embora já entrassem no `Tempo suspenso`.
 
 A partir desta versão:
 
