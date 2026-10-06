@@ -362,6 +362,10 @@ reconhecido como qualquer outra entrada em homologação: vale a última
 **entrada** em posse da Decision. Um `SOLN` posterior, com o chamado já em
 homologação, não é nova entrada.
 
+O mesmo evento é lido pelos motores do `Tempo Total Decision` e do
+`Tempo de Atendimento` (FARC): a partir dele o chamado está em homologação, que
+é pausa.
+
 O fallback abaixo, criado quando a linha de status ainda não lia `RE`, continua
 na consulta como rede de segurança:
 

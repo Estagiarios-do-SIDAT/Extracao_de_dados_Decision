@@ -3571,9 +3571,14 @@ CREATE UNIQUE CLUSTERED INDEX IX_TempoAtendRotinaBruto_DEC_id ON #TempoAtendRoti
 --------------------------------------------------------------------------------
 -- [9.2] Motor normal do FARC: tempo ativo por status
 --
--- Conta os status ativos: Aberto, aguarda atendimento e Em andamento.
+-- Conta os status ativos: Aberto, aguarda atendimento, Em andamento e Reaberto.
 -- Pausa status como Agendado, Aguarda atendimento, Em homologacao e Em teste na
 -- TI. O intervalo e limitado ao Terminal/Fechamento Decision.
+--
+-- Eventos de status: ST, RO (reabertura) e RE. O SDM grava como RE a ida para
+-- homologacao ('Em andamento' -> 'Em homologacao'); sem ele, o status ativo
+-- anterior seguia correndo ate o terminal. So entra RE com transicao textual,
+-- para que um RE sem status nao pare o relogio.
 --------------------------------------------------------------------------------
 IF OBJECT_ID('tempdb..#StatusEventosFARC_DEC') IS NOT NULL DROP TABLE #StatusEventosFARC_DEC;
 
@@ -3647,7 +3652,10 @@ CROSS APPLY (
         CONVERT(nvarchar(max), ISNULL(al.action_desc,  N''))
 ) AS txt
 WHERE al.system_time IS NOT NULL
-  AND al.type IN ('ST', 'RO')
+  AND (   al.type IN ('ST', 'RO')
+       OR (al.type = 'RE'
+           AND (   txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%alterado de ''%'' para ''%'
+                OR txt.texto_log COLLATE Latin1_General_CI_AI LIKE N'%changed from ''%'' to ''%')))
   AND b.inicio_contagem_epoch IS NOT NULL
   AND al.system_time >= b.inicio_contagem_epoch
   AND b.fechamento_decision_epoch IS NOT NULL

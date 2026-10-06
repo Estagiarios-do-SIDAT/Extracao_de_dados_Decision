@@ -25169,7 +25169,7 @@ Efeito no painel de 12 meses (1.489 chamados), contra `da77481`:
 - `Tempo de Atendimento`, excesso, meta, nHR_FARC, FARC e FAIA: 0 mudanças;
 - Power BI x consulta: consulta individual (1.012 chamados) idêntica ao painel nos chamados em comum, em todas as colunas.
 
-Pendência nova, registrada e não corrigida: o motor do FARC ([9.2]) também não
+Pendência nova (resolvida na seção 79): o motor do FARC ([9.2]) também não
 lê `RE`. Lendo-o, 26 chamados teriam `Tempo de Atendimento` menor (−41:35:07 no
 total; ex.: 1664791, 33:09:15 → 10:08:57). Só 1 FARC mudaria, na 2ª casa
 (1676350, 17,01 → 17,00), e nenhuma meta.
@@ -25202,3 +25202,64 @@ Na Decision, "Aguarda atendimento" já contava no `Tempo Total Decision`
 (`#RegrasStatus_DEC`) e continua contando; no FARC ([9.2]) continua fora.
 Nenhum outro status `hold = 0` do chamado ocorre na população. Os terminais e
 administrativos, os de problema/mudança e os de RDM ficam fora pelo critério 6.
+
+## 79. 2026-10-06 — Tempo de Atendimento (FARC) lê `RE`
+
+Defeito (pendência da seção 77): o motor de status do FARC ([9.2],
+`#StatusEventosFARC_DEC`) lia só `ST` e `RO`. O SDM grava a entrada em
+"Em homologação" como `RE`, e não como `ST`; sem esse evento, o "Em andamento"
+anterior seguia ativo até o próximo `ST`/`RO`/`SOLN` ou até o terminal do FARC.
+O mesmo vale para o motor de rotina, que desconta os intervalos inativos de
+[9.2.1], calculados com os mesmos eventos.
+
+Eventos `RE` na população do painel (1.489 chamados): 69 eventos em 67
+chamados, todos com destino "Em homologação" (68 de "Em andamento", 1 de
+"Reaberto", o 1710057). Nenhum `RE` tem outra semântica nem fica sem transição.
+Desses 67 chamados, só 26 mudam:
+
+- 37: `RE` no mesmo segundo do terminal do FARC (`resolve_date`);
+- 2: `RE` depois do terminal (1665065, 1678046);
+- 2: P3/P5 com `RE` e terminal depois das 20:00, sem segundo comercial no meio
+  (1681976, 1691159).
+
+Correção: [9.2] lê `ST`, `RO` e `RE`, na consulta e no painel. Só entra `RE`
+com a transição de status no texto ("alterado de 'X' para 'Y'" ou "changed from
+'X' to 'Y'"), para que um `RE` sem status não pare o relógio. O estado inicial
+(`PrimeiroST`) não muda: incluir o `RE` ali não altera nenhum valor.
+
+Auditoria: nos 26 chamados, a redução é exatamente o trecho entre o `RE` e o
+evento seguinte do motor ou o terminal do FARC (corrido nas P1/P2 e na rotina
+1664791, horas comerciais nas demais).
+
+| SDM | `RE` | evento seguinte / terminal | `Tempo de Atendimento` |
+|---|---|---|---|
+| 1664791 (rotina) | 16/12/2025 20:08:56 | `SOLN` 17/12 19:09:14 (terminal) | 33:09:15 → 10:08:57 |
+| 1725546 | 19/08/2026 21:27:59 e 26/08 10:07:16 | `ST` "Em homologação" → "Aguarda atendimento" 21/08 13:45:54; terminal 26/08 10:07:46 | 19:34:38 → 1:48:14 |
+| 1717035 | 16/07/2026 17:16:12 | terminal 17:28:51 (`CL` em 22/07) | 1:15:00 → 1:02:21 |
+| 1656400 | 11/11/2025 18:41:37 | terminal 18:47:50 (`CL` em 12/11) | 3:24:39 → 3:18:26 |
+| 1676350 | 05/03/2026 11:03:14 | terminal 11:05:34 (`CL` em 12/03) | 145:02:06 → 144:59:46 |
+| 1662528 (rotina) | 11/12/2025 10:19:41 e 15/12 09:38:29 | `ST` 10:21:02; terminal 15/12 09:38:40 | 17:22:14 → 17:20:42 |
+| 1734049 (P2) | 22/09/2026 20:37:08 | terminal 20:37:32 | 1:46:01 → 1:45:37 |
+| 1646923 | 07/11/2025 18:24:22 | terminal 18:24:44 | 36:44:36 → 36:44:14 |
+| 1725544 | 03/09/2026 14:57:03 | terminal 14:57:48 | 3:47:40 → 3:46:55 |
+| 1662373 | 14/01/2026 14:50:04 | terminal 14:50:12 | 257:15:38 → 257:15:30 |
+
+Sem `SOLN`, o terminal do FARC é a `Data Resolução`, em geral segundos depois
+do `RE`. Por isso o mesmo defeito custava dias no `Tempo Total Decision` (até o
+`CL`) e só segundos ou minutos no FARC.
+
+Efeito no painel de 12 meses (1.489 chamados), contra `1b187bd`:
+
+- população e esquema idênticos;
+- `Tempo de Atendimento`: 26 chamados, 8.696:30:35 → 8.654:55:28 (−41:35:07);
+  nenhum aumento;
+- `Tempo Atendimento Excedido`, `nHR_FARC` e `FARC`: 1 chamado, o 1676350
+  (meta 60 h, fator 0,20): excedido 85:02:06 → 84:59:46, nHR 85,04 → 85,00,
+  FARC 85,035 × 0,20 = 17,007 → 17,01 passa a 84,996 × 0,20 = 16,999 → 17,00;
+- FARC total 149,55 → 149,54; `Meta Atendimento`: 0 mudanças;
+- demais colunas (FAIA, `Tempo Primeiro Atendimento`, `Tempo Total Decision`,
+  `Tempo suspenso`, `Data de Encerramento Decision`, `Indicador Reabertura`,
+  grupo): 0 mudanças;
+- blocos [7] e [9.2]–[9.2.2] com o mesmo SHA-256 na consulta e no painel;
+  Power BI x consulta: consulta individual (1.012 chamados, 18 deles
+  alterados) idêntica ao painel nos chamados em comum, nas 31 colunas.

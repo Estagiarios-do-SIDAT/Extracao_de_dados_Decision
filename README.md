@@ -51,7 +51,7 @@ Quando o tempo passa da meta, a consulta calcula:
 
 O **FARC** mede o prazo de **atendimento/resolução**.
 
-A consulta calcula o tempo considerado válido para o atendimento do chamado e compara esse total com a meta aplicável. Quando há extrapolação, calcula:
+A consulta calcula o tempo considerado válido para o atendimento do chamado e compara esse total com a meta aplicável. Contam só os status ativos ("Em andamento", "Aberto, aguarda atendimento" e "Reaberto") em posse da Decision; a ida para homologação (gravada como `ST` ou `RE`) e o registro da solução (`SOLN`) param o relógio. As regras estão em [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md). Quando há extrapolação, calcula:
 
 - tempo excedido;
 - `nHR_FARC`;

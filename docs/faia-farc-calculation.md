@@ -141,7 +141,14 @@ que não são atendimento. "Aguarda atendimento" tem `hold = 0` e não conta no
 FARC: foi avaliado e reprovado pelo impacto (em 12 meses, FARC total +11,98% e
 um chamado de "Atende" para "Não Atende"; até +56 h num único chamado).
 
-"Reaberto" conta por orientação do gerente (2026-10-06). Quando o analista encerra o chamado por engano como "Resolvido, concluído", o correto é reabrir e pôr o status certo, e esse tempo é de atendimento. O SDM grava a reabertura como evento `RO` ("Resolvido, concluído" → "Reaberto"), lido pelos dois motores. No `Tempo Total Decision`, a ida para homologação gravada como `RE` ("Em andamento" → "Em homologação") também é lida. Assim o trecho ativo termina na homologação e não segue até o fechamento do chamado.
+"Reaberto" conta por orientação do gerente (2026-10-06). Quando o analista encerra o chamado por engano como "Resolvido, concluído", o correto é reabrir e pôr o status certo, e esse tempo é de atendimento. O SDM grava a reabertura como evento `RO` ("Resolvido, concluído" → "Reaberto"), lido pelos dois motores.
+
+**Ida para homologação gravada como `RE`.** O SDM costuma gravar a entrada em "Em homologação" como evento `RE` ("Em andamento" → "Em homologação"), e não como `ST`. Os dois motores leem esse evento: a partir dele o chamado está em homologação, que é pausa, e o trecho ativo anterior termina ali. No `Tempo de Atendimento`, só entra `RE` com a transição de status no texto; um `RE` sem transição não para o relógio.
+
+- **Com `SOLN`.** O `SOLN` também pausa. Se o `RE` vem antes, o intervalo `RE` → `SOLN` é homologação e não conta. Exemplo: 1664791, rotina com `RE` em 16/12 20:08:56 e `SOLN` em 17/12 19:09:14; o `Tempo de Atendimento` vai de 33:09:15 para 10:08:57. Se os dois caem no mesmo segundo, nada muda.
+- **Com `RO`/"Reaberto".** A reabertura volta a contar. Um `RE` que sai de "Reaberto" encerra o trecho reaberto e, no último ciclo, é o próprio terminal (1710057).
+
+**`Tempo Total Decision` x `Tempo de Atendimento`.** Os dois somam só status ativos, mas terminam em pontos diferentes. O `Tempo Total Decision` vai até o encerramento da Decision ou o fechamento do chamado. O `Tempo de Atendimento` vai até o terminal do FARC: o primeiro `SOLN`, o encerramento do último ciclo quando há reabertura, ou então a `Data Resolução`, que nos chamados sem `SOLN` costuma ficar segundos depois do `RE`. Por isso, sem a leitura do `RE`, o `Tempo Total Decision` contava até o fechamento (dias), enquanto o `Tempo de Atendimento` contava, em geral, segundos ou minutos a mais.
 
 **Último ciclo.** O `Tempo de Atendimento` acompanha todos os ciclos de atuação da Decision. Sem reabertura, termina no primeiro `SOLN`, como sempre. Quando o chamado é reaberto depois desse encerramento, o terminal passa a ser o primeiro encerramento depois da **última** reabertura: um `SOLN` ou uma entrada em "Em homologação". Sem esse encerramento, vale a `Data Resolução`; sem ela, o fechamento.
 
