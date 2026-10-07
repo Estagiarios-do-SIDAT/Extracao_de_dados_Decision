@@ -11,21 +11,20 @@ Este repositório atende **somente a Decision**. COI e A2B/Protect4 têm reposit
 ```text
 .
 ├── queries/
-│   └── consulta_faia_farc.sql              consulta de referência: FAIA e FARC, uma linha por chamado
+│   ├── consulta_faia_farc.sql              consulta de referência: FAIA e FARC, uma linha por chamado
+│   └── consulta_faia_farc_painel.sql       consulta de referência do painel (fonte do .m; últimos 12 meses)
 ├── powerbi/
-│   ├── consulta_faia_farc_power_bi.sql     SQL do painel, últimos 12 meses até hoje
-│   └── consulta_faia_farc_power_bi.m       consulta do painel (Power Query M): feriados do SharePoint + SQL
+│   ├── consulta_faia_farc_power_bi.m       A consulta do painel (Power Query M, única): feriados do SharePoint + SQL
+│   ├── powerbi-query.md                    documentação do painel: período, manutenção, saída, SharePoint
+│   └── documentacao-powerbi-decision.html  leitura dentro do painel (visual HTML Content)
 ├── tools/
 │   ├── executar_consulta.ps1               executa queries/ com os feriados do arquivo
-│   ├── gerar_powerbi_m.ps1                 gera powerbi/*.m a partir do .sql
+│   ├── gerar_powerbi_m.ps1                 gera powerbi/*.m a partir do SQL de referência do painel
 │   ├── verificar_feriados.ps1              valida o arquivo e a sincronia dos repositórios
 │   └── feriados.ps1                        leitura e validação do arquivo (uso interno)
 ├── docs/
 │   ├── faia-farc-calculation.md            como cada coluna é calculada
-│   ├── powerbi-query.md                    a versão do painel: período, manutenção, saída e desempenho
-│   ├── feriados.txt                        calendário de feriados e pontos facultativos (igual em todos os repositórios)
-│   ├── feriados.md                         regras, formato e fontes do calendário (igual nos três repositórios)
-│   └── documentacao-powerbi-decision.html  leitura dentro do painel (visual HTML Content)
+│   └── feriados.txt                        calendário de feriados e pontos facultativos (igual em todos os repositórios)
 ├── analysis/
 │   └── planilhas de comparação por ciclo de validação
 ├── logs/
@@ -86,23 +85,24 @@ A Decision tem **duas** consultas, com a mesma regra de cálculo e finalidades d
 | Arquivo | Finalidade | Período |
 |---|---|---|
 | [`queries/consulta_faia_farc.sql`](queries/consulta_faia_farc.sql) | Execução e análise pontual. É a **referência funcional** | Digitado à mão |
-| [`powerbi/consulta_faia_farc_power_bi.sql`](powerbi/consulta_faia_farc_power_bi.sql) | Fonte do painel | **Automático** |
+| [`queries/consulta_faia_farc_painel.sql`](queries/consulta_faia_farc_painel.sql) | Consulta de referência do painel: o SQL que a consulta do Power BI executa. Fonte do `.m` e usada em testes | **Automático** |
 
-A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`docs/powerbi-query.md`](docs/powerbi-query.md#5-período-da-consulta).
+A **única** consulta do Power BI é [`powerbi/consulta_faia_farc_power_bi.m`](powerbi/consulta_faia_farc_power_bi.m), gerada de `queries/consulta_faia_farc_painel.sql` pelo `tools/gerar_powerbi_m.ps1`. O SQL não se cola no Power BI. Para trocar o endereço do SharePoint, altere apenas `SharePointFeriadosUrl`, no topo do `.m` (link real ainda **pendente**).
+
+A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md#5-período-da-consulta).
 
 O período da Decision é uma **janela móvel de meses**, e não um ciclo de faturamento com dia fixo de virada.
 
-A documentação fica em `docs/`:
+A documentação fica em `docs/` (regras e cálculo) e em `powerbi/` (painel):
 
 | Documento | O que explica |
 |---|---|
 | [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
 | [`docs/feriados.txt`](docs/feriados.txt) | O calendário de feriados e pontos facultativos do TCU, em texto simples (`DD-MM` fixos, `DD-MM-AAAA` por ano), igual em todos os repositórios |
-| [`docs/feriados.md`](docs/feriados.md) | O arquivo de feriados: o calendário único do TCU (igual para Virtual, Decision e A2B), Portarias usadas, formato, como atualizar quando sai uma Portaria, leitura pelo Power BI (SharePoint) e pelas consultas, falhas, privacidade e gateway |
-| [`docs/powerbi-query.md`](docs/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
-| [`docs/documentacao-powerbi-decision.html`](docs/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
+| [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
+| [`powerbi/documentacao-powerbi-decision.html`](powerbi/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
 
-> Uma nota que evita confusão frequente: `Data de Encerramento Decision` **não é** o fechamento do chamado. Ela marca quando a Decision concluiu a atuação dela, e fica **vazia** quando não houve conclusão — por exemplo, numa rotina que não foi executada por causa de ponto facultativo. Isso é explicado em [`docs/powerbi-query.md`](docs/powerbi-query.md#8-data-de-encerramento-decision).
+> Uma nota que evita confusão frequente: `Data de Encerramento Decision` **não é** o fechamento do chamado. Ela marca quando a Decision concluiu a atuação dela, e fica **vazia** quando não houve conclusão — por exemplo, numa rotina que não foi executada por causa de ponto facultativo. Isso é explicado em [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md#8-data-de-encerramento-decision).
 
 As planilhas em `analysis/` guardam as comparações feitas por ciclo e por frente de atendimento.
 
@@ -150,10 +150,10 @@ DECLARE @MostrarDiagnostico bit = 0
 - `@MostrarDiagnostico = 0` retorna apenas o resultado final; `1` retorna informações extras para investigação.
 - `@ResultadoTudo`, `@G1`, `@G2`, `@SAN`, `@Servidores`, `@LibQuantum` escolhem quais janelas de resultado aparecem.
 
-**Consulta do Power BI** (`powerbi/consulta_faia_farc_power_bi.sql`):
+**Consulta do Power BI** (`powerbi/consulta_faia_farc_power_bi.m`, que executa `queries/consulta_faia_farc_painel.sql`):
 
 - `@CoberturaMeses` — cobertura da janela em meses, padrão `12`. É o único parâmetro de período.
-- Feriados e pontos facultativos: vêm do **arquivo de feriados**, e não do SQL. No painel, o `.m` lê o `feriados.txt` no SharePoint a cada atualização e o envia ao SQL no parâmetro `@Feriados`; nas consultas de `queries/`, o `tools/executar_consulta.ps1` faz o mesmo com `docs/feriados.txt`. Para incluir um feriado basta editar o arquivo no SharePoint e salvar: não se muda o SQL nem se republica o relatório. As datas vêm **somente** das portarias do TCU que definem o expediente de cada ano e das que as alteram. Detalhes em [`docs/feriados.md`](docs/feriados.md).
+- Feriados e pontos facultativos: vêm do **arquivo de feriados**, e não do SQL. No painel, o `.m` lê o `feriados.txt` no SharePoint a cada atualização e o envia ao SQL no parâmetro `@Feriados`; nas consultas de `queries/`, o `tools/executar_consulta.ps1` faz o mesmo com `docs/feriados.txt`. Para incluir um feriado basta editar o arquivo no SharePoint e salvar: não se muda o SQL nem se republica o relatório. As datas vêm **somente** das portarias do TCU que definem o expediente de cada ano e das que as alteram. Regras de preenchimento no próprio [`docs/feriados.txt`](docs/feriados.txt); SharePoint, privacidade e gateway em [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md#14-feriados-e-sharepoint).
 
 ## Fluxo de validação
 
@@ -167,14 +167,14 @@ As planilhas de análise servem para registrar se os resultados da consulta bate
 
 ## Convenções do projeto
 
-- `queries/`: consulta de referência da Decision.
-- `powerbi/`: consulta do painel.
-- `docs/`: explicações das regras, dos cálculos e do painel, inclusive a versão HTML.
+- `queries/`: consultas de referência da Decision (a manual e a do painel).
+- `powerbi/`: a consulta do painel (`.m`) e a documentação do painel, inclusive a versão HTML.
+- `docs/`: explicações das regras e dos cálculos, e o calendário `feriados.txt`.
 - `analysis/` e `logs/`: arquivos de comparação e validação.
 - `project-context/`: Histórico Mestre da Decision.
 - `support/`: consultas auxiliares.
 
-Ao alterar uma regra de cálculo, atualize também a documentação correspondente em `docs/`.
+Ao alterar uma regra de cálculo, atualize também a documentação correspondente em `docs/` e `powerbi/`, e gere o `.m` de novo.
 
 Ao validar um novo ciclo, salve a planilha na pasta `analysis/`. Os "ciclos" das pastas de análise (`Ciclo 30_04 - 29_05`, …) são os períodos de validação usados pela Decision, do dia 30 ao dia 29, e são independentes da janela móvel que alimenta o painel.
 

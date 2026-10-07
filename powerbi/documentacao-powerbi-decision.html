@@ -1,5 +1,5 @@
 <!-- Documentacao do painel FAIA/FARC da Decision para o visual HTML Content.
-Fonte oficial: docs/powerbi-query.md. Em caso de divergencia, vale ela.
+Fonte oficial: powerbi/powerbi-query.md. Em caso de divergencia, vale ela.
 Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <div style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#1f2328;background:#ffffff;padding:16px;max-width:900px'>
 
@@ -29,7 +29,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </table>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>3. Relação com a consulta de referência</h2>
-<p>A referência funcional é a consulta manual <b>queries/consulta_faia_farc.sql</b>. A consulta do painel, <b>powerbi/consulta_faia_farc_power_bi.sql</b>, <b>não tem regra própria</b>: o motor de cálculo é o mesmo. As diferenças são só de:</p>
+<p>A referência funcional é a consulta manual <b>queries/consulta_faia_farc.sql</b>. A consulta do painel, <b>powerbi/consulta_faia_farc_power_bi.m</b> (que executa <b>queries/consulta_faia_farc_painel.sql</b>), <b>não tem regra própria</b>: o motor de cálculo é o mesmo. As diferenças são só de:</p>
 <ul style='margin-top:4px'>
 <li><b>período</b> — digitado na manual, automático no painel;</li>
 <li><b>saída</b> — a manual tem janelas opcionais por categoria; o painel devolve um único resultado com todas as categorias, e o recorte G1, G2, SAN, Servidores ou LibQuantum é feito no próprio painel pela coluna Categoria;</li>
@@ -91,7 +91,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <p>É o <b>único</b> número que muda. Nenhuma regra depende dele.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Atualizar feriados e pontos facultativos</h3>
-<p>Ficam no <b>calendário</b> (feriados.txt), no SharePoint, e <b>não no SQL</b>. O painel lê o arquivo a cada atualização. É o calendário do TCU, o mesmo da Virtual e da A2B. Texto simples, em seções, uma data por linha:</p>
+<p>Ficam no <b>calendário</b> (feriados.txt), no SharePoint, e <b>não no SQL</b>. O painel lê o arquivo a cada atualização. É o calendário do TCU, o mesmo da Virtual TI e da A2B. Texto simples, em seções, uma data por linha:</p>
 <ul style='margin-top:4px'>
 <li><b>DD-MM</b>, na seção Feriados Fixos — feriados nacionais que caem no mesmo dia todo ano; cadastrados uma vez, valem todo ano. Ex.: 25-12</li>
 <li><b>DD-MM-AAAA</b>, nas seções Feriados móveis/diferenciados (Paixão de Cristo) e <b>Pontos Facultativos</b> do TCU, cadastrados por ano conforme a Portaria. Ex.: 21-11-2025</li>
@@ -105,7 +105,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <ol style='margin-top:4px'>
 <li>Abra o <b>feriados.txt</b> no SharePoint e adicione, corrija ou apague a data na seção certa.</li>
 <li>Salve. A próxima atualização do painel já usa a lista nova: não é preciso mudar o SQL nem republicar o relatório.</li>
-<li>Mantenha igual a cópia docs/feriados.txt dos repositórios (Virtual, Decision, A2B e COI), usada pela consulta de referência.</li>
+<li>Mantenha igual a cópia docs/feriados.txt dos repositórios (Virtual TI, Decision, A2B e COI), usada pela consulta de referência.</li>
 <li>Data inválida, repetida ou fora do formato, ou arquivo inacessível <b>falham a atualização</b> com mensagem; o painel nunca é calculado sem feriados.</li>
 </ol>
 <p><b>Efeito:</b> o dia cadastrado deixa de contar como tempo <b>comercial</b> — metas P3 a P5 de FAIA e FARC, início da contagem quando a abertura cai em feriado, motor das rotinas e tempo suspenso do FARC. Metas em tempo corrido não mudam. Os valores só mudam depois de atualizar, e podem mudar para chamados já carregados cuja vida passe pela data.</p>
@@ -126,7 +126,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </div>
 <ul style='margin-top:4px'>
 <li><b>O período é uma janela móvel</b>, recalculada a cada atualização. Trocar @CoberturaMeses muda quantos meses ela cobre; datas fixas descaracterizam a regra.</li>
-<li>O <b>link do arquivo de feriados</b> fica no início da consulta M (UrlArquivoFeriados). Se o arquivo mudar de lugar no SharePoint, troque o link ali; o conteúdo do arquivo se edita direto no SharePoint.</li>
+<li>O <b>link do arquivo de feriados</b> fica no início da consulta M, na variável <b>SharePointFeriadosUrl</b>: para trocar o endereço do SharePoint, altere apenas ela. O link real ainda está <b>pendente</b> (marcador INSERIR_URL_DO_ARQUIVO_FERIADOS_NO_SHAREPOINT). O conteúdo do arquivo se edita direto no SharePoint.</li>
 <li>A consulta fica incorporada ao relatório: a alteração vale na próxima atualização. Há um repositório interno, de versionamento e manutenção técnica, mantido pela equipe responsável.</li>
 </ul>
 

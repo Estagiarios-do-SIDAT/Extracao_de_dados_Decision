@@ -121,7 +121,7 @@ A contagem **não começa na abertura do chamado**, e sim quando ele entra na po
 | `nHR_FARC` | Horas de atraso, proporcionais |
 | `FARC` | `nHR_FARC` × fator do contrato |
 
-O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, incluindo fim de semana e feriado); **P3, P4 e P5 contam comercial** (segunda a sexta, 08:00 às 20:00, sem feriados nem pontos facultativos do TCU). Os feriados vêm do arquivo de feriados ([feriados.md](feriados.md)), e não ficam no SQL: é o calendário do TCU, o mesmo da Virtual e da A2B, com os feriados nacionais fixos valendo todo ano e as datas móveis e pontos facultativos cadastrados por ano, conforme a Portaria do TCU.
+O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, incluindo fim de semana e feriado); **P3, P4 e P5 contam comercial** (segunda a sexta, 08:00 às 20:00, sem feriados nem pontos facultativos do TCU). Os feriados vêm do arquivo de feriados ([feriados.txt](feriados.txt)), e não ficam no SQL: é o calendário do TCU, o mesmo da Virtual TI e da A2B, com os feriados nacionais fixos valendo todo ano e as datas móveis e pontos facultativos cadastrados por ano, conforme a Portaria do TCU.
 
 Rotinas (checklists, produção de relatórios, documentação) usam um motor próprio, que mede o intervalo da abertura até o encerramento da Decision e **desconta os períodos suspensos**. Os demais chamados usam o motor de status, que soma apenas os intervalos em que o chamado esteve realmente ativo.
 
@@ -318,4 +318,4 @@ nHR_FAIA
 nHR_FARC
 ```
 
-Detalhes de arquitetura, período e desempenho da versão usada no painel estão em [powerbi-query.md](powerbi-query.md).
+Detalhes de arquitetura, período e desempenho da versão usada no painel estão em [powerbi-query.md](../powerbi/powerbi-query.md).

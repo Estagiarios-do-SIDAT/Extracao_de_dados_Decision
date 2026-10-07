@@ -6,6 +6,12 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 -- PARAMETRO EDITAVEL  (no Power BI: Editor Avancado da consulta, no inicio do
 -- texto SqlTexto; no repositorio: altere aqui e gere de novo powerbi/consulta_faia_farc_power_bi.m)
 --
+-- Este arquivo e a CONSULTA DE REFERENCIA DO PAINEL: a fonte do .m e a copia
+-- executavel dele para testes e regressao. Ele nao se cola no Power BI; a
+-- unica consulta do Power BI e powerbi/consulta_faia_farc_power_bi.m, gerada
+-- por tools/gerar_powerbi_m.ps1 -Consulta queries/consulta_faia_farc_painel.sql
+-- -Saida powerbi/consulta_faia_farc_power_bi.m.
+--
 --   Cobertura da janela, em MESES, contados para tras a partir de HOJE.
 --   Padrao: 12. Exemplos: 6, 18, 24.
 --
@@ -450,7 +456,7 @@ VALUES
 --
 -- A lista de feriados NAO fica mais neste arquivo. Ela vem do arquivo de
 -- feriados (docs/feriados.txt; no Power BI, a copia no SharePoint), o mesmo
--- calendario do TCU para Virtual, Decision e A2B, pelo parametro @Feriados
+-- calendario do TCU para Virtual TI, Decision e A2B, pelo parametro @Feriados
 -- (JSON):
 --   [{"data":"12-25","descricao":"Natal"},{"data":"2026-04-03","descricao":"..."}]
 --   MM-DD      = feriado fixo, vale todo ano;
