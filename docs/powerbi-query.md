@@ -96,7 +96,7 @@ SharePoint, que o SQL Server não lê. A consulta do painel é o `.m`:
 1. **Página Inicial → Nova Fonte → Consulta Nula → Editor Avançado.**
 2. Cole o conteúdo inteiro de `consulta_faia_farc_power_bi.m`.
 3. Troque `INSERIR_URL_DO_ARQUIVO_FERIADOS_NO_SHAREPOINT` pelo link direto do
-   `feriados.csv` no SharePoint (o mesmo da Virtual e da A2B).
+   `feriados.txt` no SharePoint (o mesmo da Virtual e da A2B).
 4. Credenciais: SQL Server como hoje; SharePoint com **conta organizacional**.
    Privacidade das duas fontes: **Organizacional**. No gateway, permitir fontes
    de nuvem.
@@ -513,7 +513,7 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   produzir os mesmos valores para o mesmo período.
 - **Feriados e pontos facultativos** ficam no arquivo de feriados, e não no
   SQL. Painel e consulta manual leem o mesmo conteúdo (SharePoint e
-  `config/feriados.csv`, mantidos iguais). Passo a passo na
+  `docs/feriados.txt`, mantidos iguais). Passo a passo na
   [seção 13](#13-manutenção-no-power-query).
 - **O período é uma janela móvel**, calculada a cada atualização a partir da
   data corrente. Trocar `@CoberturaMeses` muda quantos meses ela cobre; datas
@@ -632,15 +632,18 @@ pela equipe responsável quando a cobertura muda em definitivo.
 
 ### Atualizar feriados e pontos facultativos
 
-**Onde estão.** No **arquivo de feriados** (`feriados.csv`), e não no SQL: no
-SharePoint para o painel e em `config/feriados.csv` para a consulta manual. É
-o calendário do TCU, o mesmo para Virtual, Decision e A2B (não há lista por
-projeto). Formato completo em [feriados.md](feriados.md):
+**Onde estão.** No **calendário** `feriados.txt`, e não no SQL: no SharePoint
+para o painel e em `docs/feriados.txt` para a consulta manual. É o calendário
+do TCU, o mesmo para Virtual, Decision e A2B (não há lista por projeto). Texto
+simples, em seções, uma data por linha. Formato completo em
+[feriados.md](feriados.md):
 
-| Tipo | O que guarda | `Data` |
+| Seção do arquivo | O que guarda | Data |
 |---|---|---|
-| fixo | Feriados nacionais que caem no mesmo dia todo ano (Natal, Tiradentes, Finados…) | `MM-DD` — ex.: `12-25` |
-| data única | Feriados móveis (Paixão de Cristo) e **pontos facultativos do TCU**, que mudam de ano para ano | `AAAA-MM-DD` — ex.: `2025-11-21` |
+| `## Feriados Fixos` | Feriados nacionais que caem no mesmo dia todo ano (Natal, Tiradentes, Finados…) | `DD-MM` — ex.: `25-12` |
+| `## Feriados móveis/diferenciados` | Feriados de data variável (Paixão de Cristo) | `DD-MM-AAAA` — ex.: `03-04-2026` |
+| `## Pontos Facultativos` | **Pontos facultativos do TCU** do ano | `DD-MM-AAAA` — ex.: `21-11-2025` |
+| `## Feriados Por Data` | Feriado de um único dia que não seja móvel nem ponto facultativo | `DD-MM-AAAA` |
 
 No SQL, o bloco `[FERIADOS E PONTOS FACULTATIVOS]` só recebe a lista
 (`@Feriados`), valida e monta `#FeriadosFixos_DEC` e `#FeriadosPorData_DEC`,
@@ -671,40 +674,43 @@ Os textos foram conferidos no Boletim do TCU pelos códigos de autenticidade
 
 O que entra em cada tipo:
 
-- **feriado nacional de data fixa** → `MM-DD`, uma vez só, vale para todos os
+- **feriado nacional de data fixa** → `DD-MM`, uma vez só, vale para todos os
   anos;
 - **feriado nacional móvel** (Paixão de Cristo) e **ponto facultativo** →
-  `AAAA-MM-DD`, com o ano;
+  `DD-MM-AAAA`, com o ano, cada um na sua seção;
 - ponto facultativo de **meio expediente**, se algum dia houver, precisa de
   decisão antes de ser cadastrado: o arquivo só representa o dia inteiro.
 
 **Como fazer.** Sem mexer no SQL nem republicar o relatório:
 
-1. Abra o `feriados.csv` no SharePoint.
-2. **Adicionar:** inclua uma linha. Ex., o ponto facultativo de 21/11/2025
-   (Portaria-TCU nº 157/2025):
-   ```csv
-   2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,"Portaria-TCU nº 157/2025 (BTCU, autenticidade 79190602)"
+1. Abra o `feriados.txt` no SharePoint.
+2. **Adicionar:** inclua a data, sozinha na linha, na seção certa. Ex., o ponto
+   facultativo de 21/11/2025 (Portaria-TCU nº 157/2025), em
+   `## Pontos Facultativos`:
+   ```text
+   21-11-2025
    ```
-   Na coluna `Fonte`, registre a Portaria. Não repita os feriados fixos
-   (`MM-DD`): eles já valem todo ano.
-3. **Corrigir:** edite a data, a descrição ou a fonte na linha existente.
-4. **Remover:** apague a linha inteira.
+   Registre a Portaria num parágrafo da seção (e na tabela de
+   [feriados.md](feriados.md)). Não repita os feriados fixos (`DD-MM`): eles
+   já valem todo ano.
+3. **Corrigir:** edite a data na linha existente.
+4. **Remover:** apague a linha da data.
 5. Salve. A próxima atualização do painel já usa a lista nova.
-6. Copie o mesmo conteúdo para o `config/feriados.csv` dos três repositórios
-   (Virtual, Decision, A2B) e rode `tools/verificar_feriados.ps1`; a consulta
-   manual passa a usar a lista nova.
+6. Copie o mesmo arquivo para o `docs/feriados.txt` de todos os repositórios
+   (Virtual, Decision, A2B e COI) e para `Documentos e Relatórios/feriados.txt`,
+   e rode `tools/verificar_feriados.ps1`; a consulta manual passa a usar a
+   lista nova.
 
 **Cuidados.**
 
-- Data inválida (`2026-02-30`, `26/11/2026`) ou coluna ausente **falham a
+- Data inexistente (`30-02-2026`), linha que parece data fora do formato
+  (`2026-02-30`, `26/11/2026`), data repetida ou fora da seção certa **falham a
   atualização** com a linha do problema; nada é calculado com uma lista pela
   metade nem com zero feriados.
-- Uma data repetida entra uma vez só, com aviso no script.
 - Um feriado que cai em sábado ou domingo não muda o tempo comercial, porque
   fim de semana já fica fora dele. Na Decision, ele só aparece como motivo no
   diagnóstico de rotina aberta nesse dia.
-- O ano de um feriado fixo não se escreve: `MM-DD` vale para todos os anos.
+- O ano de um feriado fixo não se escreve: `DD-MM` vale para todos os anos.
 
 **Efeito nos cálculos.** Um dia cadastrado deixa de contar como tempo
 **comercial**. Isso afeta:

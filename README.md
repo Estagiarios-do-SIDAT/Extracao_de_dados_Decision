@@ -15,8 +15,6 @@ Este repositório atende **somente a Decision**. COI e A2B/Protect4 têm reposit
 ├── powerbi/
 │   ├── consulta_faia_farc_power_bi.sql     SQL do painel, últimos 12 meses até hoje
 │   └── consulta_faia_farc_power_bi.m       consulta do painel (Power Query M): feriados do SharePoint + SQL
-├── config/
-│   └── feriados.csv                        feriados e pontos facultativos (cópia versionada)
 ├── tools/
 │   ├── executar_consulta.ps1               executa queries/ com os feriados do arquivo
 │   ├── gerar_powerbi_m.ps1                 gera powerbi/*.m a partir do .sql
@@ -25,7 +23,8 @@ Este repositório atende **somente a Decision**. COI e A2B/Protect4 têm reposit
 ├── docs/
 │   ├── faia-farc-calculation.md            como cada coluna é calculada
 │   ├── powerbi-query.md                    a versão do painel: período, manutenção, saída e desempenho
-│   ├── feriados.md                         arquivo de feriados (igual nos três repositórios)
+│   ├── feriados.txt                        calendário de feriados e pontos facultativos (igual em todos os repositórios)
+│   ├── feriados.md                         regras, formato e fontes do calendário (igual nos três repositórios)
 │   └── documentacao-powerbi-decision.html  leitura dentro do painel (visual HTML Content)
 ├── analysis/
 │   └── planilhas de comparação por ciclo de validação
@@ -98,6 +97,7 @@ A documentação fica em `docs/`:
 | Documento | O que explica |
 |---|---|
 | [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
+| [`docs/feriados.txt`](docs/feriados.txt) | O calendário de feriados e pontos facultativos do TCU, em texto simples (`DD-MM` fixos, `DD-MM-AAAA` por ano), igual em todos os repositórios |
 | [`docs/feriados.md`](docs/feriados.md) | O arquivo de feriados: o calendário único do TCU (igual para Virtual, Decision e A2B), Portarias usadas, formato, como atualizar quando sai uma Portaria, leitura pelo Power BI (SharePoint) e pelas consultas, falhas, privacidade e gateway |
 | [`docs/powerbi-query.md`](docs/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
 | [`docs/documentacao-powerbi-decision.html`](docs/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
@@ -124,7 +124,7 @@ Essas consultas não calculam FAIA nem FARC. Elas servem para investigar chamado
 1. Abra o arquivo SQL do fornecedor e indicador desejado.
 2. Ajuste o período de apuração nos parâmetros de data.
 3. Mantenha `@MostrarDiagnostico = 0` para uso normal no relatório.
-4. Execute pelo script, que lê os feriados de `config/feriados.csv` e já grava
+4. Execute pelo script, que lê os feriados de `docs/feriados.txt` e já grava
    o resultado em CSV:
    `.\tools\executar_consulta.ps1 -Consulta .\queries\consulta_faia_farc.sql -Saida C:\temp\decision`
    (para usar o SSMS: `-GerarSql C:\temp\decision_ssms.sql` gera uma cópia com
@@ -153,7 +153,7 @@ DECLARE @MostrarDiagnostico bit = 0
 **Consulta do Power BI** (`powerbi/consulta_faia_farc_power_bi.sql`):
 
 - `@CoberturaMeses` — cobertura da janela em meses, padrão `12`. É o único parâmetro de período.
-- Feriados e pontos facultativos: vêm do **arquivo de feriados**, e não do SQL. No painel, o `.m` lê o `feriados.csv` no SharePoint a cada atualização e o envia ao SQL no parâmetro `@Feriados`; nas consultas de `queries/`, o `tools/executar_consulta.ps1` faz o mesmo com `config/feriados.csv`. Para incluir um feriado basta editar o arquivo no SharePoint e salvar: não se muda o SQL nem se republica o relatório. As datas vêm **somente** das portarias do TCU que definem o expediente de cada ano e das que as alteram. Detalhes em [`docs/feriados.md`](docs/feriados.md).
+- Feriados e pontos facultativos: vêm do **arquivo de feriados**, e não do SQL. No painel, o `.m` lê o `feriados.txt` no SharePoint a cada atualização e o envia ao SQL no parâmetro `@Feriados`; nas consultas de `queries/`, o `tools/executar_consulta.ps1` faz o mesmo com `docs/feriados.txt`. Para incluir um feriado basta editar o arquivo no SharePoint e salvar: não se muda o SQL nem se republica o relatório. As datas vêm **somente** das portarias do TCU que definem o expediente de cada ano e das que as alteram. Detalhes em [`docs/feriados.md`](docs/feriados.md).
 
 ## Fluxo de validação
 
