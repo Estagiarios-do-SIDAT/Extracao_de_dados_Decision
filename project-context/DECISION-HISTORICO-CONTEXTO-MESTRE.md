@@ -25263,3 +25263,41 @@ Efeito no painel de 12 meses (1.489 chamados), contra `1b187bd`:
 - blocos [7] e [9.2]–[9.2.2] com o mesmo SHA-256 na consulta e no painel;
   Power BI x consulta: consulta individual (1.012 chamados, 18 deles
   alterados) idêntica ao painel nos chamados em comum, nas 31 colunas.
+
+## 80. 2026-10-07 — feriados fora do SQL (arquivo de feriados)
+
+Motivo: no ambiente controlado do Power BI, qualquer mudança no SQL do painel
+exige pedir nova versão à equipe responsável. Com a lista de feriados dentro
+do SQL, um ponto facultativo novo obrigava a republicar. Agora a lista fica
+num arquivo (`config/feriados.csv`; no painel, o mesmo arquivo no SharePoint),
+igual para Virtual, Decision e A2B, com a coluna `Escopo` para as diferenças
+entre os projetos. Desenho completo em `docs/feriados.md`.
+
+Arquitetura:
+
+- o SQL Server não lê o SharePoint nem o disco do usuário (a conta não tem
+  `ADMINISTER BULK OPERATIONS`, e *Ad Hoc Distributed Queries* está
+  desligado). Os feriados chegam pelo parâmetro `@Feriados` (JSON com data e
+  descrição; a descrição é usada no diagnóstico de rotina aberta em feriado,
+  `[Rotina desconsiderada]`). O bloco `[FERIADOS E PONTOS FACULTATIVOS]` valida
+  e monta `#FeriadosFixos_DEC` e `#FeriadosPorData_DEC`, usadas como antes;
+- painel: `powerbi/consulta_faia_farc_power_bi.m` lê o CSV do SharePoint,
+  valida, filtra `TODOS`/`DECISION` e chama o SQL por `Value.NativeQuery` com o
+  parâmetro. O `.m` é gerado do `.sql` (`tools/gerar_powerbi_m.ps1`);
+- consulta manual: `tools/executar_consulta.ps1` faz o mesmo a partir de
+  `config/feriados.csv` (ou gera uma cópia para o SSMS);
+- sem `@Feriados`, lista vazia, JSON ou data inválida: erro, nunca zero
+  feriados.
+
+Lista: os 9 fixos (`MM-DD`) e as 27 datas da Decision viraram 36 linhas de
+escopo `TODOS`/`DECISION`, com as mesmas descrições. Só a Decision tem
+2025-03-05 e 2025-06-20; a A2B não tem as datas de 2025 anteriores a 27/10; a
+Virtual não tem 2026-06-29. Diferenças mantidas, registradas em
+`docs/feriados.md`.
+
+Regressão (mesmo instante, SQL antigo com a lista embutida x SQL novo com
+`@Feriados` do arquivo): painel de 12 meses (1.489 chamados), 0 diferenças nas
+31 colunas; consulta de referência (janela padrão, 1.012 chamados), 0 diferenças nas 31 colunas; as 36 descrições enviadas são as mesmas do SQL antigo (diagnóstico de rotina inalterado); referência x painel nos chamados em comum: 0 diferenças. Teste de manutenção: com 2026-09-15 incluído só no arquivo, 5
+chamados mudam (ex.: 1731870, aberto e resolvido nesse dia: Tempo de
+Atendimento 0:21:28 → 0:00:04, Tempo Total Decision 0:21:24 → 0:00:00);
+retirada a data, 0 diferenças; o SQL não mudou (mesmo SHA256).

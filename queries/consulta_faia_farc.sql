@@ -333,111 +333,69 @@ VALUES
     (NULL, N'%Relatório de Manutenções Sistemática%'),
     (NULL, N'%Relatório com manutenções sistemáticas%');
 
+-- FERIADOS-ESCOPO: DECISION
 --------------------------------------------------------------------------------
 -- [FERIADOS E PONTOS FACULTATIVOS] - COMPARTILHADOS
 --
--- As duas consultas anteriores tinham tabelas de feriados IDENTICAS (mesmo
--- conteudo, mesmo tipo, mesma granularidade e mesma regra). Por isso foram
--- unificadas em um unico par de tabelas.
+-- A lista de feriados NAO fica mais neste arquivo. Ela vem do arquivo de
+-- feriados (config/feriados.csv; no Power BI, a copia no SharePoint), so com as
+-- linhas do escopo declarado em "FERIADOS-ESCOPO", pelo parametro @Feriados
+-- (JSON):
+--   [{"data":"12-25","descricao":"Natal"},{"data":"2026-04-03","descricao":"..."}]
+--   MM-DD      = feriado fixo, vale todo ano;
+--   AAAA-MM-DD = data unica (feriado movel ou ponto facultativo).
+-- Quem preenche @Feriados: tools/executar_consulta.ps1 (consultas de queries/)
+-- e o codigo M de powerbi/*.m (Power BI). Sem @Feriados a consulta nem compila;
+-- lista vazia, JSON ou data invalida param com erro: nunca se calcula com zero
+-- feriados. Data repetida entra uma vez.
 --
--- Regra de cadastro:
---   - Feriados fixos: MM-DD, porque se repetem todos os anos.
---   - Feriados moveis/diferenciados e pontos facultativos: YYYY-MM-DD.
---
--- Regra de contagem:
---   - CORRIDA: conta 24h, sem desconto de feriado/facultativo (FAIA).
+-- Regra de contagem (inalterada):
+--   - CORRIDA: conta 24h, sem desconto de feriado/facultativo.
 --   - COMERCIAL: conta somente segunda a sexta, 08:00-20:00, zerando os dias
 --     listados como feriado/facultativo.
 --------------------------------------------------------------------------------
+IF OBJECT_ID('tempdb..#FeriadosEntrada_DEC') IS NOT NULL DROP TABLE #FeriadosEntrada_DEC;
+CREATE TABLE #FeriadosEntrada_DEC (data nvarchar(100) NULL, descricao nvarchar(200) NULL);
+IF ISJSON(@Feriados) = 1
+    INSERT INTO #FeriadosEntrada_DEC (data, descricao)
+    SELECT LTRIM(RTRIM(j.data)), LTRIM(RTRIM(j.descricao))
+    FROM OPENJSON(@Feriados) WITH (data nvarchar(100) '$.data', descricao nvarchar(200) '$.descricao') AS j;
+IF ISNULL(ISJSON(@Feriados), 0) = 0 OR NOT EXISTS (SELECT 1 FROM #FeriadosEntrada_DEC)
+BEGIN
+    ;THROW 50001, N'Feriados: @Feriados vazio ou invalido. Execute pelo tools/executar_consulta.ps1 (queries/) ou pelo Power BI (powerbi/*.m).', 1;
+END;
+IF EXISTS (
+    SELECT 1
+    FROM #FeriadosEntrada_DEC AS f
+    WHERE f.data IS NULL
+       OR NOT (   (LEN(f.data) = 10 AND f.data LIKE N'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND TRY_CONVERT(date, f.data, 23) IS NOT NULL)
+               OR (LEN(f.data) = 5  AND f.data LIKE N'[0-9][0-9]-[0-9][0-9]' AND TRY_CONVERT(date, N'2000-' + f.data, 23) IS NOT NULL))
+)
+BEGIN
+    ;THROW 50002, N'Feriados: @Feriados tem data fora do formato AAAA-MM-DD ou MM-DD.', 1;
+END;
+
 IF OBJECT_ID('tempdb..#FeriadosFixos_DEC') IS NOT NULL DROP TABLE #FeriadosFixos_DEC;
 CREATE TABLE #FeriadosFixos_DEC (
     mes_dia   char(5)        NOT NULL PRIMARY KEY, -- MM-DD
     descricao nvarchar(200)  NOT NULL
 );
-
 INSERT INTO #FeriadosFixos_DEC (mes_dia, descricao)
-VALUES
-    ('01-01', N'Confraternização Universal'),
-    ('04-21', N'Tiradentes'),
-    ('05-01', N'Dia Mundial do Trabalho'),
-    ('09-07', N'Independência do Brasil'),
-    ('10-12', N'Nossa Senhora Aparecida'),
-    ('11-02', N'Finados'),
-    ('11-15', N'Proclamação da República'),
-    ('11-20', N'Dia Nacional de Zumbi e da Consciência Negra'),
-    ('12-25', N'Natal');
+SELECT f.data, MIN(COALESCE(NULLIF(f.descricao, N''), N'Feriado'))
+FROM #FeriadosEntrada_DEC AS f
+WHERE LEN(f.data) = 5
+GROUP BY f.data;
 
 IF OBJECT_ID('tempdb..#FeriadosPorData_DEC') IS NOT NULL DROP TABLE #FeriadosPorData_DEC;
 CREATE TABLE #FeriadosPorData_DEC (
     data      date           NOT NULL PRIMARY KEY,
     descricao nvarchar(200)  NOT NULL
 );
-
--- ANO 2025 - calendario do TCU.
---   Fonte: Portaria-TCU n. 10, de 13/01/2025, alterada pelas Portarias-TCU
---   n. 67 (28/04/2025), n. 157 (30/10/2025) e n. 176 (19/12/2025), todas
---   publicadas no Boletim do TCU. Autenticidade em www.tcu.gov.br/autenticidade,
---   codigos 77411949, 77981373, 79190602 e 79506777.
---   Os feriados nacionais de data fixa de 2025 ja estao em #FeriadosFixos_DEC.
---   Pascoa (20/04/2025, domingo) nao consta da portaria e nao foi cadastrada.
-
--- Feriados moveis de 2025.
 INSERT INTO #FeriadosPorData_DEC (data, descricao)
-VALUES
-    ('2025-04-18', N'Paixão de Cristo');
-
--- Pontos facultativos de 2025 no TCU.
-INSERT INTO #FeriadosPorData_DEC (data, descricao)
-VALUES
-    ('2025-03-03', N'Carnaval - ponto facultativo'),
-    ('2025-03-04', N'Carnaval - ponto facultativo'),
-    ('2025-03-05', N'Quarta-Feira de Cinzas - ponto facultativo'),
-    ('2025-04-17', N'Quinta-Feira Santa - ponto facultativo'),
-    ('2025-05-02', N'Ponto facultativo - sexta-feira após Dia Mundial do Trabalho'),
-    ('2025-06-19', N'Corpus Christi - ponto facultativo'),
-    ('2025-06-20', N'Ponto facultativo - sexta-feira após Corpus Christi'),
-    ('2025-10-27', N'Dia do Servidor Público federal - ponto facultativo'),
-    ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),
-    ('2025-12-24', N'Ponto facultativo - véspera do Natal'),
-    ('2025-12-26', N'Ponto facultativo - sexta-feira após o Natal'),
-    ('2025-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
-
--- ANO 2026 - calendario do TCU.
---   Fonte: Portaria-TCU n. 1, de 08/01/2026, alterada pela Portaria-TCU n. 93
---   (25/06/2026), publicadas no Boletim do TCU. Autenticidade em
---   www.tcu.gov.br/autenticidade, codigos 79561193 e 80587034.
-
--- Feriados moveis/diferenciados de 2026.
-INSERT INTO #FeriadosPorData_DEC (data, descricao)
-VALUES
-    ('2026-04-03', N'Paixão de Cristo'),
-    ('2026-04-05', N'Páscoa');
-
--- Pontos facultativos de 2026 no TCU.
--- Comentarios indicam o feriado/evento ao qual o ponto facultativo esta ligado.
-INSERT INTO #FeriadosPorData_DEC (data, descricao)
-VALUES
-    ('2026-01-02', N'Ponto facultativo - emenda após Confraternização Universal'),
-    ('2026-02-16', N'Carnaval - ponto facultativo'),
-    ('2026-02-17', N'Carnaval - ponto facultativo'),
-    ('2026-02-18', N'Quarta-Feira de Cinzas - ponto facultativo'),
-    ('2026-04-02', N'Ponto facultativo - véspera da Paixão de Cristo'),
-    ('2026-04-20', N'Ponto facultativo - emenda antes de Tiradentes'),
-    ('2026-06-04', N'Corpus Christi - ponto facultativo'),
-    ('2026-06-05', N'Ponto facultativo - emenda após Corpus Christi'),
-    ('2026-06-29', N'Ponto facultativo - jogo da Seleção Brasileira na Copa do Mundo FIFA 2026'),
-    ('2026-10-28', N'Dia do Servidor Público federal - ponto facultativo'),
-    ('2026-12-24', N'Ponto facultativo - véspera do Natal'),
-    ('2026-12-31', N'Ponto facultativo - véspera da Confraternização Universal');
-
--- Pontos facultativos de 2027:
--- Nao cadastrar nada por enquanto. Quando houver definicao oficial, inserir aqui
--- com data completa no formato YYYY-MM-DD.
---
--- MANUTENCAO: sempre que a janela passar a cobrir um ano novo, cadastrar os
--- feriados moveis e pontos facultativos DAQUELE ano a partir da portaria anual
--- do TCU e de TODAS as portarias que a alterarem. As portarias-base e suas
--- alteracoes aparecem em pesquisa.apps.tcu.gov.br (base Normas).
+SELECT CONVERT(date, f.data, 23), MIN(COALESCE(NULLIF(f.descricao, N''), N'Feriado'))
+FROM #FeriadosEntrada_DEC AS f
+WHERE LEN(f.data) = 10
+GROUP BY CONVERT(date, f.data, 23);
 
 --------------------------------------------------------------------------------
 -- [0] Membros do grupo do fornecedor  (herdado do FARC)

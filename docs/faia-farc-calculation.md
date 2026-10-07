@@ -121,7 +121,7 @@ A contagem **não começa na abertura do chamado**, e sim quando ele entra na po
 | `nHR_FARC` | Horas de atraso, proporcionais |
 | `FARC` | `nHR_FARC` × fator do contrato |
 
-O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, incluindo fim de semana e feriado); **P3, P4 e P5 contam comercial** (segunda a sexta, 08:00 às 20:00, sem feriados nem pontos facultativos do TCU).
+O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, incluindo fim de semana e feriado); **P3, P4 e P5 contam comercial** (segunda a sexta, 08:00 às 20:00, sem feriados nem pontos facultativos do TCU). Os feriados vêm do arquivo de feriados, linhas de escopo `TODOS` ou `DECISION` ([feriados.md](feriados.md)), e não ficam no SQL.
 
 Rotinas (checklists, produção de relatórios, documentação) usam um motor próprio, que mede o intervalo da abertura até o encerramento da Decision e **desconta os períodos suspensos**. Os demais chamados usam o motor de status, que soma apenas os intervalos em que o chamado esteve realmente ativo.
 

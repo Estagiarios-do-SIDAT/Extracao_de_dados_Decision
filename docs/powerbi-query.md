@@ -42,11 +42,16 @@ resultado do FARC
 Ela devolve **um único resultado**, com **31 colunas**. Não traz tabelas de
 diagnóstico nem resultados intermediários.
 
-Arquivo:
+Arquivos:
 
 ```text
-powerbi/consulta_faia_farc_power_bi.sql
+powerbi/consulta_faia_farc_power_bi.m     consulta do painel (Power Query M)
+powerbi/consulta_faia_farc_power_bi.sql   o SQL que ela executa
 ```
+
+O `.m` lê o arquivo de feriados no SharePoint, valida e executa o `.sql` com o
+parâmetro `@Feriados`. É gerado a partir do `.sql` por
+`tools/gerar_powerbi_m.ps1` ([feriados.md](feriados.md)).
 
 ---
 
@@ -85,20 +90,27 @@ leitura**.
 
 ## 3. Como usar no Power BI
 
-1. **Obter dados → SQL Server.**
-2. Informe o servidor e o banco de dados **`mdb`**.
-3. Escolha o modo **Importação**.
-4. Abra **Opções avançadas** e cole o conteúdo inteiro de
-   `consulta_faia_farc_power_bi.sql` no campo **Instrução SQL**.
-5. Deixe **"Adicionar colunas de relação" desmarcado**.
-6. Carregue e, na primeira vez, confira a quantidade de chamados
+O SQL não é mais colado em **Instrução SQL**: os feriados vêm de um arquivo no
+SharePoint, que o SQL Server não lê. A consulta do painel é o `.m`:
+
+1. **Página Inicial → Nova Fonte → Consulta Nula → Editor Avançado.**
+2. Cole o conteúdo inteiro de `consulta_faia_farc_power_bi.m`.
+3. Troque `INSERIR_URL_DO_ARQUIVO_FERIADOS_NO_SHAREPOINT` pelo link direto do
+   `feriados.csv` no SharePoint (o mesmo da Virtual e da A2B).
+4. Credenciais: SQL Server como hoje; SharePoint com **conta organizacional**.
+   Privacidade das duas fontes: **Organizacional**. No gateway, permitir fontes
+   de nuvem.
+5. Carregue e, na primeira vez, confira a quantidade de chamados
    (ver [seção 10](#10-conferência)).
-7. Nas próximas vezes, basta **Atualizar**: o período se ajusta sozinho
-   (ver [seção 5](#5-período-da-consulta)).
-8. Na primeira atualização depois de qualquer mudança no texto SQL, o Power BI
+6. Nas próximas vezes, basta **Atualizar**: o período se ajusta sozinho
+   (ver [seção 5](#5-período-da-consulta)) e o arquivo de feriados é lido de novo.
+7. Na primeira atualização depois de qualquer mudança no texto SQL, o Power BI
    pede para **aprovar a execução da consulta nativa**. Isso é esperado.
 
-Não é preciso ajustar datas a cada mês. Não é preciso rodar nenhum script antes.
+Não é preciso ajustar datas a cada mês. Arquivo de feriados inacessível,
+placeholder não preenchido ou linha inválida **falham a atualização** com
+mensagem; o painel nunca é calculado sem feriados. Requisitos do serviço e
+checklist do primeiro refresh em [feriados.md](feriados.md).
 
 ---
 
@@ -106,16 +118,17 @@ Não é preciso ajustar datas a cada mês. Não é preciso rodar nenhum script a
 
 ### Quem executa a consulta
 
-O arquivo é **T-SQL puro**. Não é Power Query M, não é DAX.
+O `.sql` é **T-SQL puro**. O `.m` só lê e valida o arquivo de feriados e envia
+o SQL com o parâmetro `@Feriados`.
 
 ```text
 A consulta é usada pelo Power BI, mas é executada pelo SQL Server.
-O Power BI envia o script pelo conector e importa o resultado.
+O Power BI envia o script pelo conector, com o parâmetro @Feriados, e importa o resultado.
 ```
 
-O Power BI **não calcula nada**: abre a conexão, manda o texto do script, espera
-e recebe o result set final. Em condições equivalentes, o mesmo script roda
-integralmente no SSMS.
+O Power BI **não calcula nada**: abre a conexão, manda o texto do script e a
+lista de feriados, espera e recebe o result set final. O mesmo script roda
+integralmente no SSMS, com `@Feriados` declarado (ver abaixo).
 
 ### O banco precisa ser o `mdb`
 
@@ -132,8 +145,12 @@ Fora do `mdb`, o lote inteiro falharia na compilação com
 
 1. Conecte no mesmo servidor usado pelo Power BI.
 2. Confirme `mdb` na caixa de banco de dados.
-3. Abra o arquivo **inteiro** e execute **sem selecionar trecho**. Executar só um
+3. Gere uma cópia com os feriados declarados
+   (`.\tools\executar_consulta.ps1 -Consulta .\powerbi\consulta_faia_farc_power_bi.sql -GerarSql C:\temp\painel.sql`),
+   abra-a **inteira** e execute **sem selecionar trecho**. Executar só um
    pedaço quebra a consulta: as temporárias dos blocos anteriores não existiriam.
+   O arquivo original, sem `@Feriados`, falha com
+   `Must declare the scalar variable "@Feriados"`.
 4. Basta permissão de leitura nas tabelas acima e de criar temporária em
    `tempdb`.
 5. Não é preciso sessão limpa: as temporárias têm sufixo `_DEC` e cada bloco
@@ -146,6 +163,8 @@ Fora do `mdb`, o lote inteiro falharia na compilação com
 | `Msg 208 — Invalid object name 'dbo.call_req'` | Sessão em outro banco | Selecionar `mdb`; conferir se o `USE mdb;` foi colado junto |
 | `Msg 207 — Invalid column name` | Temporária antiga de outra versão do script ainda viva na sessão | Abrir sessão nova e repetir; se persistir, é defeito do arquivo |
 | `Msg 1088 / objeto #... não existe` | Foi executado só um trecho selecionado | Executar o arquivo inteiro |
+| `Must declare the scalar variable "@Feriados"` | Arquivo executado sem a lista de feriados | Gerar a cópia com `tools/executar_consulta.ps1 -GerarSql` |
+| `Feriados: @Feriados vazio ou invalido` / `data fora do formato` | Lista de feriados vazia ou com data inválida | Corrigir o arquivo de feriados ([feriados.md](feriados.md)) |
 | Demora muito | Volume ou bloqueio | Ver [seção 9](#9-desempenho) |
 
 Ao relatar um problema, informe **cliente**, **banco atual**, **usuário**,
@@ -215,8 +234,8 @@ passo no Power Query está na [seção 13](#13-manutenção-no-power-query).
 
 Nenhuma regra de negócio depende desse número. Cobertura maior significa mais
 chamados e mais tempo de atualização. Antes de ir além de 12 meses, confira se os
-feriados do período mais antigo estão cadastrados — ver
-[seção 13](#13-manutenção-no-power-query).
+feriados do período mais antigo estão no arquivo de feriados — ver
+[feriados.md](feriados.md).
 
 ---
 
@@ -492,9 +511,9 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   saída.
 - **Preservar a equivalência funcional com a consulta manual.** As duas devem
   produzir os mesmos valores para o mesmo período.
-- **Feriados e pontos facultativos** ficam cadastrados dentro da própria
-  consulta. Ao incluir uma data nova, inclua **também** na consulta manual,
-  senão os números passam a divergir. Passo a passo na
+- **Feriados e pontos facultativos** ficam no arquivo de feriados, e não no
+  SQL. Painel e consulta manual leem o mesmo conteúdo (SharePoint e
+  `config/feriados.csv`, mantidos iguais). Passo a passo na
   [seção 13](#13-manutenção-no-power-query).
 - **O período é uma janela móvel**, calculada a cada atualização a partir da
   data corrente. Trocar `@CoberturaMeses` muda quantos meses ela cobre; datas
@@ -544,15 +563,20 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
 - todas as temporárias são criadas antes de serem usadas;
 - os nomes das temporárias não colidem com os das outras consultas do
   repositório;
-- as tabelas de feriados das duas consultas são idênticas;
+- as duas consultas leem os feriados do mesmo arquivo, pelo parâmetro
+  `@Feriados` (desde 2026-10-07);
 - `nHR_FAIA` e `nHR_FARC` usam divisão proporcional, sem `CEILING`.
 
 **Limitações conhecidas:**
 
-- os feriados móveis e pontos facultativos estão cadastrados para **2025 e
-  2026**, conforme as portarias do TCU. Os de **2027 ainda não existem**: a partir
-  de janeiro de 2027 o calendário comercial fica incompleto até que a portaria
-  daquele ano seja cadastrada — ver [seção 13](#13-manutenção-no-power-query);
+- os feriados móveis e pontos facultativos estão no arquivo de feriados para
+  **2025 e 2026**, conforme as portarias do TCU. Os de **2027 ainda não
+  existem**: a partir de janeiro de 2027 o calendário comercial fica incompleto
+  até que a portaria daquele ano seja cadastrada no arquivo — ver
+  [seção 13](#13-manutenção-no-power-query);
+- o código M (`.m`) não foi executado no ambiente de desenvolvimento (sem Power
+  BI Desktop); o SQL foi testado com o parâmetro `@Feriados` exatamente como o
+  Power Query o envia. Validar no primeiro refresh ([feriados.md](feriados.md));
 - os tempos da [seção 9](#9-desempenho) são medições pontuais do ambiente
   testado, não garantia de execução;
 - `dbo.audit_log` e `dbo.View_Audit_Group` são tratadas como **opcionais**. Se
@@ -564,26 +588,24 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
 
 ## 13. Manutenção no Power Query
 
-O texto SQL da consulta fica guardado na etapa **Fonte** do Power Query. É ali
-que se mexe tanto na cobertura quanto nos feriados.
+O texto SQL fica dentro da consulta M, no valor `SqlTexto`. A cobertura é uma
+linha desse SQL. **Os feriados não ficam no SQL**: ficam no arquivo de feriados
+no SharePoint.
 
 ### Onde fica o texto SQL
 
 1. No Power BI Desktop: **Página Inicial → Transformar dados**. Abre o Power
    Query.
 2. No painel **Consultas**, à esquerda, selecione a consulta da Decision.
-3. No painel **Configurações da consulta**, à direita, em **Etapas aplicadas**,
-   clique na **engrenagem** da etapa **Fonte**.
-4. Abre a janela **Banco de dados SQL Server**. Em **Opções avançadas**, o campo
-   **Instrução SQL** contém a consulta inteira.
-5. Depois de editar: **OK → Fechar e aplicar**. Na primeira atualização o Power
-   BI pede para **aprovar a consulta nativa** — aprove.
+3. **Página Inicial → Editor Avançado.** O SQL está no texto `SqlTexto`.
+4. Depois de editar: **Concluído → Fechar e aplicar**. Na primeira atualização
+   o Power BI pede para **aprovar a consulta nativa** — aprove.
 
-> Não existe um parâmetro do Power BI separado para a cobertura: ela é uma linha
-> do próprio SQL. Isso é deliberado. Montar o SQL por concatenação em M para
-> expor um parâmetro faria a engrenagem da etapa Fonte deixar de mostrar o texto
-> editável, e o painel passaria a depender de código M que não está versionado
-> neste repositório.
+O caminho recomendado é alterar `powerbi/consulta_faia_farc_power_bi.sql` no
+repositório, gerar o `.m` de novo
+(`.\tools\gerar_powerbi_m.ps1 -Consulta .\powerbi\consulta_faia_farc_power_bi.sql`)
+e colar o `.m` inteiro no Editor Avançado, trocando de novo o placeholder do
+SharePoint. O `.m` gerado é versionado no repositório.
 
 ### Mudar a cobertura (6, 12, 18, 24 meses)
 
@@ -593,9 +615,9 @@ A primeira instrução do SQL, logo abaixo de `SET TRANSACTION ...`, é:
 DECLARE @CoberturaMeses int = 12;
 ```
 
-1. Abra a etapa **Fonte** como acima.
-2. No começo do campo **Instrução SQL**, troque `12` pelo número de meses.
-3. **OK → Fechar e aplicar**, e aprove a consulta nativa.
+1. Abra o **Editor Avançado** como acima.
+2. No começo do texto `SqlTexto`, troque `12` pelo número de meses.
+3. **Concluído → Fechar e aplicar**, e aprove a consulta nativa.
 
 É o único número que muda. Não altere mais nada do texto para mudar o período.
 
@@ -606,13 +628,19 @@ pela equipe responsável quando a cobertura muda em definitivo.
 
 ### Atualizar feriados e pontos facultativos
 
-**Onde estão.** Dentro do próprio SQL, no bloco
-`[FERIADOS E PONTOS FACULTATIVOS]`, em duas tabelas:
+**Onde estão.** No **arquivo de feriados** (`feriados.csv`), e não no SQL: no
+SharePoint para o painel e em `config/feriados.csv` para a consulta manual. A
+Decision usa as linhas de `Escopo` `TODOS` ou `DECISION`. Formato completo em
+[feriados.md](feriados.md):
 
-| Tabela | O que guarda | Formato da data |
+| Tipo | O que guarda | `Data` |
 |---|---|---|
-| `#FeriadosFixos_DEC` | Feriados nacionais que caem no mesmo dia todo ano (Natal, Tiradentes, Finados…) | `'MM-DD'` — ex.: `'12-25'` |
-| `#FeriadosPorData_DEC` | Feriados móveis (Paixão de Cristo) e **pontos facultativos do TCU**, que mudam de ano para ano | `'YYYY-MM-DD'` — ex.: `'2025-11-21'` |
+| fixo | Feriados nacionais que caem no mesmo dia todo ano (Natal, Tiradentes, Finados…) | `MM-DD` — ex.: `12-25` |
+| data única | Feriados móveis (Paixão de Cristo) e **pontos facultativos do TCU**, que mudam de ano para ano | `AAAA-MM-DD` — ex.: `2025-11-21` |
+
+No SQL, o bloco `[FERIADOS E PONTOS FACULTATIVOS]` só recebe a lista
+(`@Feriados`), valida e monta `#FeriadosFixos_DEC` e `#FeriadosPorData_DEC`,
+usadas pelos cálculos como antes.
 
 **De onde vêm as datas.** Só de fonte **oficial do TCU**: a portaria anual do
 Presidente do TCU que "divulga os feriados nacionais e define os dias de ponto
@@ -634,47 +662,40 @@ Fontes do cadastro atual:
 | 2025 | Portaria-TCU nº 10, de 13/01/2025 | nº 67 (28/04/2025), nº 157 (30/10/2025), nº 176 (19/12/2025) |
 | 2026 | Portaria-TCU nº 1, de 08/01/2026 | nº 93 (25/06/2026) |
 
-O que entra em cada tabela:
+O que entra em cada tipo:
 
-- **feriado nacional de data fixa** → `#FeriadosFixos_DEC`, uma vez só, vale para
-  todos os anos;
+- **feriado nacional de data fixa** → `MM-DD`, uma vez só, vale para todos os
+  anos;
 - **feriado nacional móvel** (Paixão de Cristo) e **ponto facultativo** →
-  `#FeriadosPorData_DEC`, com o ano;
+  `AAAA-MM-DD`, com o ano;
 - ponto facultativo de **meio expediente**, se algum dia houver, precisa de
-  decisão antes de ser cadastrado: a tabela só representa o dia inteiro.
+  decisão antes de ser cadastrado: o arquivo só representa o dia inteiro.
 
-Cada linha é `('data', N'descrição')`, separada da próxima por vírgula. A última
-linha de cada `VALUES` termina em `;` e não em vírgula.
+**Como fazer.** Sem mexer no SQL nem republicar o relatório:
 
-**Como fazer.** O bloco fica no meio de um texto longo, e a caixa **Instrução
-SQL** não tem busca. O caminho seguro é editar o **arquivo** e colar de volta:
-
-1. Abra `powerbi/consulta_faia_farc_power_bi.sql` num editor e procure
-   `[FERIADOS E PONTOS FACULTATIVOS]`.
-2. **Adicionar:** inclua uma linha na tabela certa, no bloco do ano. Ex., o
-   ponto facultativo de 21/11/2025 (Portaria-TCU nº 157/2025):
-   ```sql
-   ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),
+1. Abra o `feriados.csv` no SharePoint.
+2. **Adicionar:** inclua uma linha. Ex., o ponto facultativo de 21/11/2025
+   (Portaria-TCU nº 157/2025):
+   ```csv
+   2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,TODOS
    ```
-   Registre no comentário do bloco a portaria de origem.
-3. **Corrigir:** edite a data ou a descrição na linha existente.
-4. **Remover:** apague a linha inteira e confira a vírgula da linha anterior.
-5. A consulta de referência, `queries/consulta_faia_farc.sql`, tem a mesma
-   lista de datas. As duas precisam ficar iguais, senão os números do painel e
-   os da referência divergem.
-6. Copie o arquivo do Power BI **inteiro** e cole no campo **Instrução SQL** da
-   etapa **Fonte**, substituindo o texto anterior.
-7. **OK → Fechar e aplicar**, aprove a consulta nativa e **atualize**.
+3. **Corrigir:** edite a data, a descrição ou o escopo na linha existente.
+4. **Remover:** apague a linha inteira.
+5. Salve. A próxima atualização do painel já usa a lista nova.
+6. Copie o mesmo conteúdo para o `config/feriados.csv` dos três repositórios
+   (Virtual, Decision, A2B) e rode `tools/verificar_feriados.ps1`; a consulta
+   manual passa a usar a lista nova.
 
 **Cuidados.**
 
-- Cada data aparece **uma vez só** por tabela. Uma data repetida faz a
-  atualização falhar com `Violation of PRIMARY KEY constraint`, e a mensagem cita
-  a data repetida — nada é carregado até que a linha duplicada seja removida.
-- Não cadastre o mesmo dia nas duas tabelas.
+- Data inválida (`2026-02-30`, `26/11/2026`), escopo desconhecido ou coluna
+  ausente **falham a atualização** com a linha do problema; nada é calculado
+  com uma lista pela metade nem com zero feriados.
+- Uma data repetida no mesmo projeto entra uma vez só, com aviso no script.
 - Um feriado que cai em sábado ou domingo não muda o tempo comercial, porque
-  fim de semana já fica fora dele. Cadastrá-lo não causa problema.
-- O ano de um feriado fixo não se escreve: `'MM-DD'` vale para todos os anos.
+  fim de semana já fica fora dele. Na Decision, ele só aparece como motivo no
+  diagnóstico de rotina aberta nesse dia.
+- O ano de um feriado fixo não se escreve: `MM-DD` vale para todos os anos.
 
 **Efeito nos cálculos.** Um dia cadastrado deixa de contar como tempo
 **comercial**. Isso afeta:
@@ -690,7 +711,7 @@ inteira de cada chamado, um feriado novo pode alterar chamados já carregados
 antes, se a vida deles passar pela data.
 
 **Situação atual do cadastro.** Os feriados fixos valem para todos os anos. Os
-móveis e os pontos facultativos estão cadastrados para **2025 e 2026 completos**,
+móveis e os pontos facultativos estão no arquivo para **2025 e 2026 completos**,
 conferidos contra as portarias da tabela acima. **2027 ainda não está
 cadastrado.**
 

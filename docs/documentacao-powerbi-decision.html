@@ -4,7 +4,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <div style='font-family:Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#1f2328;background:#ffffff;padding:16px;max-width:900px'>
 
 <h1 style='font-size:20px;margin:0 0 4px 0;color:#0b3d6b'>Painel FAIA e FARC — Decision</h1>
-<p style='margin:0 0 12px 0;color:#57606a'>Como a fonte de dados deste painel funciona e como mantê-la. Atualizado em 18/09/2026.</p>
+<p style='margin:0 0 12px 0;color:#57606a'>Como a fonte de dados deste painel funciona e como mantê-la. Atualizado em 07/10/2026.</p>
 
 <div style='background:#eef5fc;border-left:4px solid #0b5cad;padding:10px 12px;margin:0 0 16px 0'>
 <b>Em uma linha:</b> o painel mostra os chamados da Decision <b>encerrados nos últimos 12 meses até hoje</b>, com FAIA e FARC na mesma linha, calculados pela mesma regra da consulta de referência. A janela anda sozinha a cada atualização.
@@ -19,7 +19,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </ul>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>2. De onde vêm os dados</h2>
-<p>Base <b>mdb</b> do CA Service Desk Manager, lida <b>somente para leitura</b>. O SQL roda no SQL Server; o Power BI apenas envia o texto e importa o resultado.</p>
+<p>Base <b>mdb</b> do CA Service Desk Manager, lida <b>somente para leitura</b>. O SQL roda no SQL Server; o Power BI apenas envia o texto, com a lista de feriados lida do arquivo de feriados no SharePoint, e importa o resultado.</p>
 <table style='border-collapse:collapse;width:100%;margin:6px 0 10px 0'>
 <tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Tabela</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 6px'>Papel</th></tr>
 <tr><td style='border:1px solid #d0d7de;padding:4px 6px'>call_req</td><td style='border:1px solid #d0d7de;padding:4px 6px'>O chamado: tipo, severidade, status, categoria, abertura, fechamento</td></tr>
@@ -76,10 +76,10 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <p>A coluna é informativa. Nenhum tempo, meta, nHR ou valor de FAIA/FARC é calculado a partir dela.</p>
 
 <h2 style='font-size:16px;color:#0b3d6b;border-bottom:1px solid #d0d7de;padding-bottom:4px'>7. Manutenção no Power Query</h2>
-<p><b>Onde fica o SQL:</b> Página Inicial › <b>Transformar dados</b> › selecione a consulta da Decision › em <b>Etapas aplicadas</b>, clique na <b>engrenagem</b> da etapa <b>Fonte</b> › <b>Opções avançadas</b> › campo <b>Instrução SQL</b>. Depois de editar: <b>OK</b> › <b>Fechar e aplicar</b>, e aprove a <b>consulta nativa</b> quando o Power BI pedir.</p>
+<p><b>Onde fica o SQL:</b> Página Inicial › <b>Transformar dados</b> › selecione a consulta da Decision › <b>Editor Avançado</b>: o SQL está no texto <b>SqlTexto</b>. Depois de editar: <b>Concluído</b> › <b>Fechar e aplicar</b>, e aprove a <b>consulta nativa</b> quando o Power BI pedir. Os feriados <b>não</b> ficam no SQL.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Aumentar ou reduzir a cobertura</h3>
-<p>A primeira instrução do SQL, logo no topo do campo, é:</p>
+<p>A primeira instrução do SQL, logo no início de SqlTexto, é:</p>
 <p style='font-family:Consolas,monospace;background:#f6f8fa;border:1px solid #d0d7de;padding:6px 8px'>DECLARE @CoberturaMeses int = 12;</p>
 <table style='border-collapse:collapse;margin:6px 0 10px 0'>
 <tr style='background:#f6f8fa'><th style='text-align:left;border:1px solid #d0d7de;padding:4px 10px'>Cobertura</th><th style='text-align:left;border:1px solid #d0d7de;padding:4px 10px'>Troque o número para</th></tr>
@@ -91,10 +91,10 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <p>É o <b>único</b> número que muda. Nenhuma regra depende dele.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Atualizar feriados e pontos facultativos</h3>
-<p>Ficam dentro do SQL, no bloco <b>[FERIADOS E PONTOS FACULTATIVOS]</b>:</p>
+<p>Ficam no <b>arquivo de feriados</b> (feriados.csv), no SharePoint, e <b>não no SQL</b>. O painel lê o arquivo a cada atualização. Colunas: <b>Data</b>, <b>Descricao</b>, <b>Escopo</b> (TODOS ou DECISION valem para a Decision):</p>
 <ul style='margin-top:4px'>
-<li><b>#FeriadosFixos_DEC</b> — feriados nacionais que caem no mesmo dia todo ano, formato <b>'MM-DD'</b>. Ex.: ('12-25', N'Natal'),</li>
-<li><b>#FeriadosPorData_DEC</b> — feriados móveis (Paixão de Cristo) e <b>pontos facultativos do TCU</b>, formato <b>'YYYY-MM-DD'</b>. Ex.: ('2025-11-21', N'Ponto facultativo - sexta-feira após Consciência Negra'),</li>
+<li><b>MM-DD</b> — feriados nacionais que caem no mesmo dia todo ano. Ex.: 12-25,Natal,TODOS</li>
+<li><b>AAAA-MM-DD</b> — feriados móveis (Paixão de Cristo) e <b>pontos facultativos do TCU</b>. Ex.: 2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,TODOS</li>
 </ul>
 <p><b>Fonte obrigatória:</b> somente a portaria anual do TCU que define feriados e pontos facultativos do ano, publicada no Boletim do TCU, <b>e todas as portarias que a alterarem</b>. Consulte em pesquisa.apps.tcu.gov.br, base Normas. Não use calendário civil genérico nem de outro órgão.</p>
 <table style='border-collapse:collapse;margin:6px 0 10px 0'>
@@ -103,10 +103,10 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <tr><td style='border:1px solid #d0d7de;padding:4px 8px'>2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>Portaria-TCU nº 1, de 08/01/2026</td><td style='border:1px solid #d0d7de;padding:4px 8px'>nº 93 de 2026</td></tr>
 </table>
 <ol style='margin-top:4px'>
-<li>Edite o arquivo <b>powerbi/consulta_faia_farc_power_bi.sql</b> num editor: adicione, corrija ou apague a linha. A última linha de cada lista termina em ponto e vírgula, não em vírgula.</li>
-<li>A consulta de referência, <b>queries/consulta_faia_farc.sql</b>, tem a mesma lista: as duas precisam ficar iguais, senão os números divergem.</li>
-<li>Copie o arquivo do painel <b>inteiro</b> e cole no campo <b>Instrução SQL</b> da etapa Fonte.</li>
-<li>OK › Fechar e aplicar › aprove a consulta nativa › <b>Atualizar</b>.</li>
+<li>Abra o <b>feriados.csv</b> no SharePoint e adicione, corrija ou apague a linha.</li>
+<li>Salve. A próxima atualização do painel já usa a lista nova: não é preciso mudar o SQL nem republicar o relatório.</li>
+<li>Mantenha igual a cópia config/feriados.csv dos repositórios da Virtual, da Decision e da A2B, usada pela consulta de referência.</li>
+<li>Data inválida, escopo desconhecido ou arquivo inacessível <b>falham a atualização</b> com mensagem; o painel nunca é calculado sem feriados.</li>
 </ol>
 <p><b>Efeito:</b> o dia cadastrado deixa de contar como tempo <b>comercial</b> — metas P3 a P5 de FAIA e FARC, início da contagem quando a abertura cai em feriado, motor das rotinas e tempo suspenso do FARC. Metas em tempo corrido não mudam. Os valores só mudam depois de atualizar, e podem mudar para chamados já carregados cuja vida passe pela data.</p>
 
@@ -126,7 +126,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 </div>
 <ul style='margin-top:4px'>
 <li><b>O período é uma janela móvel</b>, recalculada a cada atualização. Trocar @CoberturaMeses muda quantos meses ela cobre; datas fixas descaracterizam a regra.</li>
-<li>Uma data de feriado <b>repetida</b> faz a atualização falhar com <i>Violation of PRIMARY KEY constraint</i>; a mensagem cita a data. Remova a duplicata.</li>
+<li>O <b>link do arquivo de feriados</b> fica no início da consulta M (UrlArquivoFeriados). Se o arquivo mudar de lugar no SharePoint, troque o link ali; o conteúdo do arquivo se edita direto no SharePoint.</li>
 <li>A consulta fica incorporada ao relatório: a alteração vale na próxima atualização. Há um repositório interno, de versionamento e manutenção técnica, mantido pela equipe responsável.</li>
 </ul>
 
