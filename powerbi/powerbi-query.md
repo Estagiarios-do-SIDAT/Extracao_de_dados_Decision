@@ -703,8 +703,8 @@ O que entra em cada tipo:
 3. **Corrigir:** edite a data na linha existente.
 4. **Remover:** apague a linha da data.
 5. Salve. A próxima atualização do painel já usa a lista nova.
-6. Copie o mesmo arquivo para o `docs/feriados.txt` de todos os repositórios
-   (Virtual TI, Decision, A2B e COI) e para `Documentos e Relatórios/feriados.txt`,
+6. Copie o mesmo arquivo para o `docs/feriados.txt` dos repositórios
+   Virtual TI, Decision e A2B e para `Documentos e Relatórios/feriados.txt`,
    e rode `tools/verificar_feriados.ps1`; a consulta manual passa a usar a
    lista nova.
 

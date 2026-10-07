@@ -105,7 +105,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <ol style='margin-top:4px'>
 <li>Abra o <b>feriados.txt</b> no SharePoint e adicione, corrija ou apague a data na seção certa.</li>
 <li>Salve. A próxima atualização do painel já usa a lista nova: não é preciso mudar o SQL nem republicar o relatório.</li>
-<li>Mantenha igual a cópia docs/feriados.txt dos repositórios (Virtual TI, Decision, A2B e COI), usada pela consulta de referência.</li>
+<li>Mantenha igual a cópia docs/feriados.txt dos repositórios Virtual TI, Decision e A2B, usada pela consulta de referência.</li>
 <li>Data inválida, repetida ou fora do formato, ou arquivo inacessível <b>falham a atualização</b> com mensagem; o painel nunca é calculado sem feriados.</li>
 </ol>
 <p><b>Efeito:</b> o dia cadastrado deixa de contar como tempo <b>comercial</b> — metas P3 a P5 de FAIA e FARC, início da contagem quando a abertura cai em feriado, motor das rotinas e tempo suspenso do FARC. Metas em tempo corrido não mudam. Os valores só mudam depois de atualizar, e podem mudar para chamados já carregados cuja vida passe pela data.</p>

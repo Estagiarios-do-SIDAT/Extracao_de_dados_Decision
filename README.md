@@ -24,7 +24,7 @@ Este repositório atende **somente a Decision**. COI e A2B/Protect4 têm reposit
 │   └── feriados.ps1                        leitura e validação do arquivo (uso interno)
 ├── docs/
 │   ├── faia-farc-calculation.md            como cada coluna é calculada
-│   └── feriados.txt                        calendário de feriados e pontos facultativos (igual em todos os repositórios)
+│   └── feriados.txt                        calendário de feriados e pontos facultativos (igual na Virtual TI, Decision e A2B)
 ├── analysis/
 │   └── planilhas de comparação por ciclo de validação
 ├── logs/
@@ -98,7 +98,7 @@ A documentação fica em `docs/` (regras e cálculo) e em `powerbi/` (painel):
 | Documento | O que explica |
 |---|---|
 | [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
-| [`docs/feriados.txt`](docs/feriados.txt) | O calendário de feriados e pontos facultativos do TCU, em texto simples (`DD-MM` fixos, `DD-MM-AAAA` por ano), igual em todos os repositórios |
+| [`docs/feriados.txt`](docs/feriados.txt) | O calendário de feriados e pontos facultativos do TCU, em texto simples (`DD-MM` fixos, `DD-MM-AAAA` por ano), igual na Virtual TI, Decision e A2B |
 | [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
 | [`powerbi/documentacao-powerbi-decision.html`](powerbi/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
 
