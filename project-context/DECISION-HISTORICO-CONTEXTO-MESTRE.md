@@ -25301,3 +25301,29 @@ Regressão (mesmo instante, SQL antigo com a lista embutida x SQL novo com
 chamados mudam (ex.: 1731870, aberto e resolvido nesse dia: Tempo de
 Atendimento 0:21:28 → 0:00:04, Tempo Total Decision 0:21:24 → 0:00:00);
 retirada a data, 0 diferenças; o SQL não mudou (mesmo SHA256).
+
+## 81. 2026-10-07 — calendário único do TCU e correção do M (Formula.Firewall)
+
+Decisão do usuário: Virtual, Decision e A2B usam **o mesmo calendário**, o da
+Portaria do TCU de cada ano, sem diferença por projeto. Feriados nacionais
+fixos recorrentes (`MM-DD`); datas móveis e pontos facultativos por ano
+(`AAAA-MM-DD`). Fontes conferidas no BTCU pela consulta de autenticidade:
+Portarias-TCU nº 10, 67, 157 e 176/2025, nº 179/2025 e nº 1 e 93/2026 (lista
+e códigos em `docs/feriados.md`). Arquivo: `Data,Descricao,Fonte`, 35 linhas;
+coluna `Escopo` removida; tools, SQL (só comentários) e M sem lógica por
+projeto.
+
+Efeito na Decision: a lista da Decision já era a das Portarias. A única
+diferença é 2026-04-05 (Páscoa, domingo), que não está na Portaria nº 1/2026 e
+saiu. Domingo não tem horário comercial; na Decision o texto só aparecia como
+motivo no diagnóstico de rotina aberta nesse dia. Medido contra o estado
+anterior (`e973d0f`), mesmo instante: painel de 12 meses (1.485 chamados), 0
+diferenças nas 31 colunas; consulta de referência (janela padrão, 1.012 chamados), 0 diferenças nas 31 colunas.
+
+M: a primeira versão gerada falhava com *Formula.Firewall* no motor do Power
+BI Desktop, mesmo com SharePoint/Web e SQL como Organizacional. O gerador passou
+a pôr tudo num único passo `Fonte`. Validado com o motor do Power BI Desktop
+(sem PBIX, arquivo por HTTP local): executa com Organizacional +
+Organizacional, firewall ativo e sem `FastCombine`; M = SQL (1.485 linhas, 31
+colunas, 0 diferenças). SharePoint Online real, OAuth2, PBIX, gateway e
+refresh no serviço ainda dependem do ambiente.

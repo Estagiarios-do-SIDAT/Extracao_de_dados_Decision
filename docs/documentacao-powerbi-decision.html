@@ -91,10 +91,10 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <p>É o <b>único</b> número que muda. Nenhuma regra depende dele.</p>
 
 <h3 style='font-size:14px;margin:10px 0 4px 0'>Atualizar feriados e pontos facultativos</h3>
-<p>Ficam no <b>arquivo de feriados</b> (feriados.csv), no SharePoint, e <b>não no SQL</b>. O painel lê o arquivo a cada atualização. Colunas: <b>Data</b>, <b>Descricao</b>, <b>Escopo</b> (TODOS ou DECISION valem para a Decision):</p>
+<p>Ficam no <b>arquivo de feriados</b> (feriados.csv), no SharePoint, e <b>não no SQL</b>. O painel lê o arquivo a cada atualização. É o calendário do TCU, o mesmo da Virtual e da A2B. Colunas: <b>Data</b>, <b>Descricao</b>, <b>Fonte</b> (a Portaria do TCU):</p>
 <ul style='margin-top:4px'>
-<li><b>MM-DD</b> — feriados nacionais que caem no mesmo dia todo ano. Ex.: 12-25,Natal,TODOS</li>
-<li><b>AAAA-MM-DD</b> — feriados móveis (Paixão de Cristo) e <b>pontos facultativos do TCU</b>. Ex.: 2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,TODOS</li>
+<li><b>MM-DD</b> — feriados nacionais que caem no mesmo dia todo ano; cadastrados uma vez, valem todo ano. Ex.: 12-25,Natal,Feriado nacional fixo</li>
+<li><b>AAAA-MM-DD</b> — feriados móveis (Paixão de Cristo) e <b>pontos facultativos do TCU</b>, cadastrados por ano conforme a Portaria. Ex.: 2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,Portaria-TCU nº 157/2025</li>
 </ul>
 <p><b>Fonte obrigatória:</b> somente a portaria anual do TCU que define feriados e pontos facultativos do ano, publicada no Boletim do TCU, <b>e todas as portarias que a alterarem</b>. Consulte em pesquisa.apps.tcu.gov.br, base Normas. Não use calendário civil genérico nem de outro órgão.</p>
 <table style='border-collapse:collapse;margin:6px 0 10px 0'>
@@ -106,7 +106,7 @@ Sem aspas duplas neste arquivo: pode ser colado dentro de uma medida DAX. -->
 <li>Abra o <b>feriados.csv</b> no SharePoint e adicione, corrija ou apague a linha.</li>
 <li>Salve. A próxima atualização do painel já usa a lista nova: não é preciso mudar o SQL nem republicar o relatório.</li>
 <li>Mantenha igual a cópia config/feriados.csv dos repositórios da Virtual, da Decision e da A2B, usada pela consulta de referência.</li>
-<li>Data inválida, escopo desconhecido ou arquivo inacessível <b>falham a atualização</b> com mensagem; o painel nunca é calculado sem feriados.</li>
+<li>Data inválida, coluna ausente ou arquivo inacessível <b>falham a atualização</b> com mensagem; o painel nunca é calculado sem feriados.</li>
 </ol>
 <p><b>Efeito:</b> o dia cadastrado deixa de contar como tempo <b>comercial</b> — metas P3 a P5 de FAIA e FARC, início da contagem quando a abertura cai em feriado, motor das rotinas e tempo suspenso do FARC. Metas em tempo corrido não mudam. Os valores só mudam depois de atualizar, e podem mudar para chamados já carregados cuja vida passe pela data.</p>
 

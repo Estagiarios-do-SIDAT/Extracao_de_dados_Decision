@@ -574,9 +574,13 @@ proporcionais: um atraso de 1h30 aparece como `1,50`, nunca como `2`.
   existem**: a partir de janeiro de 2027 o calendário comercial fica incompleto
   até que a portaria daquele ano seja cadastrada no arquivo — ver
   [seção 13](#13-manutenção-no-power-query);
-- o código M (`.m`) não foi executado no ambiente de desenvolvimento (sem Power
-  BI Desktop); o SQL foi testado com o parâmetro `@Feriados` exatamente como o
-  Power Query o envia. Validar no primeiro refresh ([feriados.md](feriados.md));
+- o `.m` foi validado com o motor do Power BI Desktop, fora do PBIX e com o
+  arquivo de feriados servido localmente: executa com as duas fontes como
+  Organizacional e o firewall de privacidade ativo, e devolve o mesmo resultado
+  do SQL. A primeira versão gerada (um passo por etapa) era recusada pelo
+  firewall (*Formula.Firewall*); a atual faz tudo num único passo (`Fonte`). O
+  acesso ao SharePoint Online real (OAuth2), o gateway e o refresh no serviço
+  ainda dependem de validação no PBIX ([feriados.md](feriados.md));
 - os tempos da [seção 9](#9-desempenho) são medições pontuais do ambiente
   testado, não garantia de execução;
 - `dbo.audit_log` e `dbo.View_Audit_Group` são tratadas como **opcionais**. Se
@@ -629,9 +633,9 @@ pela equipe responsável quando a cobertura muda em definitivo.
 ### Atualizar feriados e pontos facultativos
 
 **Onde estão.** No **arquivo de feriados** (`feriados.csv`), e não no SQL: no
-SharePoint para o painel e em `config/feriados.csv` para a consulta manual. A
-Decision usa as linhas de `Escopo` `TODOS` ou `DECISION`. Formato completo em
-[feriados.md](feriados.md):
+SharePoint para o painel e em `config/feriados.csv` para a consulta manual. É
+o calendário do TCU, o mesmo para Virtual, Decision e A2B (não há lista por
+projeto). Formato completo em [feriados.md](feriados.md):
 
 | Tipo | O que guarda | `Data` |
 |---|---|---|
@@ -660,7 +664,10 @@ Fontes do cadastro atual:
 | Ano | Portaria anual | Alterações |
 |---|---|---|
 | 2025 | Portaria-TCU nº 10, de 13/01/2025 | nº 67 (28/04/2025), nº 157 (30/10/2025), nº 176 (19/12/2025) |
-| 2026 | Portaria-TCU nº 1, de 08/01/2026 | nº 93 (25/06/2026) |
+| 2026 | Portaria-TCU nº 1, de 08/01/2026 (02/01 também pela nº 179, de 19/12/2025) | nº 93 (25/06/2026) |
+
+Os textos foram conferidos no Boletim do TCU pelos códigos de autenticidade
+(lista em [feriados.md](feriados.md), seção 2).
 
 O que entra em cada tipo:
 
@@ -677,9 +684,11 @@ O que entra em cada tipo:
 2. **Adicionar:** inclua uma linha. Ex., o ponto facultativo de 21/11/2025
    (Portaria-TCU nº 157/2025):
    ```csv
-   2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,TODOS
+   2025-11-21,Ponto facultativo - sexta-feira após Consciência Negra,"Portaria-TCU nº 157/2025 (BTCU, autenticidade 79190602)"
    ```
-3. **Corrigir:** edite a data, a descrição ou o escopo na linha existente.
+   Na coluna `Fonte`, registre a Portaria. Não repita os feriados fixos
+   (`MM-DD`): eles já valem todo ano.
+3. **Corrigir:** edite a data, a descrição ou a fonte na linha existente.
 4. **Remover:** apague a linha inteira.
 5. Salve. A próxima atualização do painel já usa a lista nova.
 6. Copie o mesmo conteúdo para o `config/feriados.csv` dos três repositórios
@@ -688,10 +697,10 @@ O que entra em cada tipo:
 
 **Cuidados.**
 
-- Data inválida (`2026-02-30`, `26/11/2026`), escopo desconhecido ou coluna
-  ausente **falham a atualização** com a linha do problema; nada é calculado
-  com uma lista pela metade nem com zero feriados.
-- Uma data repetida no mesmo projeto entra uma vez só, com aviso no script.
+- Data inválida (`2026-02-30`, `26/11/2026`) ou coluna ausente **falham a
+  atualização** com a linha do problema; nada é calculado com uma lista pela
+  metade nem com zero feriados.
+- Uma data repetida entra uma vez só, com aviso no script.
 - Um feriado que cai em sábado ou domingo não muda o tempo comercial, porque
   fim de semana já fica fora dele. Na Decision, ele só aparece como motivo no
   diagnóstico de rotina aberta nesse dia.

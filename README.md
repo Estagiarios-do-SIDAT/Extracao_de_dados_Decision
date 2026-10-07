@@ -98,7 +98,7 @@ A documentação fica em `docs/`:
 | Documento | O que explica |
 |---|---|
 | [`docs/faia-farc-calculation.md`](docs/faia-farc-calculation.md) | Como cada coluna é calculada, em linguagem simples |
-| [`docs/feriados.md`](docs/feriados.md) | O arquivo de feriados: formato, escopo por projeto, como editar, leitura pelo Power BI (SharePoint) e pelas consultas, falhas |
+| [`docs/feriados.md`](docs/feriados.md) | O arquivo de feriados: o calendário único do TCU (igual para Virtual, Decision e A2B), Portarias usadas, formato, como atualizar quando sai uma Portaria, leitura pelo Power BI (SharePoint) e pelas consultas, falhas, privacidade e gateway |
 | [`docs/powerbi-query.md`](docs/powerbi-query.md) | A versão do painel: arquitetura, janela móvel, manutenção de cobertura e de feriados, desempenho e as particularidades da coluna `Data de Encerramento Decision` |
 | [`docs/documentacao-powerbi-decision.html`](docs/documentacao-powerbi-decision.html) | A mesma documentação do painel, em HTML, para exibir no visual **HTML Content** do Power BI. Deriva de `powerbi-query.md` e não pode contradizê-lo |
 
