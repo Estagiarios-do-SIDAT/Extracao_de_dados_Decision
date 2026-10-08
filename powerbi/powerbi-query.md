@@ -643,14 +643,13 @@ pela equipe responsável quando a cobertura muda em definitivo.
 **Onde estão.** No **calendário** `feriados.txt`, e não no SQL: no SharePoint
 para o painel e em `docs/feriados.txt` para a consulta manual. É o calendário
 do TCU, o mesmo para Virtual TI, Decision e A2B (não há lista por projeto). Texto
-simples, em três seções, uma data por linha; formato, cadastro de um ano novo
+simples, em duas seções, uma data por linha; formato, cadastro de um ano novo
 e leitura pelo Power BI na [seção 14](#14-feriados-e-sharepoint):
 
 | Seção do arquivo | O que guarda | Data |
 |---|---|---|
 | `## Feriados Fixos` | Feriados nacionais que caem no mesmo dia todo ano (Natal, Tiradentes, Finados…) | `DD-MM` — ex.: `25-12` |
-| `## Feriados móveis/diferenciados` | Feriados de data variável (Paixão de Cristo) | `DD-MM-AAAA` — ex.: `03-04-2026` |
-| `## Pontos Facultativos` | **Pontos facultativos do TCU** do ano | `DD-MM-AAAA` — ex.: `21-11-2025` |
+| `## Feriados móveis/diferenciados e pontos facultativos` | Datas de um ano: o feriado de data variável (Paixão de Cristo) e os **pontos facultativos do TCU** | `DD-MM-AAAA` — ex.: `03-04-2026`, `21-11-2025` |
 
 No SQL, o bloco `[FERIADOS E PONTOS FACULTATIVOS]` só recebe a lista
 (`@Feriados`), valida e monta `#FeriadosFixos_DEC` e `#FeriadosPorData_DEC`,
@@ -684,23 +683,23 @@ O que entra em cada tipo:
 - **feriado nacional de data fixa** → `DD-MM`, uma vez só, vale para todos os
   anos;
 - **feriado nacional móvel** (Paixão de Cristo) e **ponto facultativo** →
-  `DD-MM-AAAA`, com o ano, cada um na sua seção;
+  `DD-MM-AAAA`, com o ano, juntos na segunda seção;
 - ponto facultativo de **meio expediente**, se algum dia houver, precisa de
   decisão antes de ser cadastrado: o arquivo só representa o dia inteiro.
 
-A seção segue a classificação da Portaria (feriado nacional ou ponto
-facultativo), e não o fato de a data mudar a cada ano. Carnaval, Quarta-Feira de
-Cinzas e Corpus Christi também mudam de data, mas a Portaria os define como
-ponto facultativo: ficam em `## Pontos Facultativos`. As duas seções com ano têm
-o mesmo efeito no cálculo. A Páscoa cai sempre num domingo e não precisa de
-cadastro.
+A classificação segue a Portaria (feriado nacional ou ponto facultativo), e
+não o fato de a data mudar a cada ano: Carnaval, Quarta-Feira de Cinzas e Corpus
+Christi também mudam de data, mas a Portaria os define como ponto facultativo.
+No arquivo, o feriado de data variável e os pontos facultativos ficam juntos
+porque têm o mesmo efeito no cálculo. A Páscoa cai sempre num domingo e não
+precisa de cadastro.
 
 **Como fazer.** Sem mexer no SQL nem republicar o relatório:
 
 1. Abra o `feriados.txt` no SharePoint.
-2. **Adicionar:** inclua a data, sozinha na linha, na seção certa. Ex., o ponto
-   facultativo de 21/11/2025 (Portaria-TCU nº 157/2025), em
-   `## Pontos Facultativos`:
+2. **Adicionar:** inclua a data, sozinha na linha, sob o `Ano de AAAA.` da seção
+   `## Feriados móveis/diferenciados e pontos facultativos`. Ex., o ponto
+   facultativo de 21/11/2025 (Portaria-TCU nº 157/2025):
    ```text
    21-11-2025
    ```
@@ -772,20 +771,29 @@ início.
   **Normas**; a ficha da Portaria anual lista as alterações em "Alterada por").
   Não entram feriados estaduais, municipais ou de outros órgãos.
 
-### As três seções
+### As seções e a classificação das datas
+
+O arquivo tem **duas seções**:
 
 | Seção (título literal no arquivo) | O que guarda | Formato | Vale |
 |---|---|---|---|
-| `## Feriados Fixos` | feriados nacionais que caem sempre no mesmo dia | `DD-MM` | todo ano |
-| `## Feriados móveis/diferenciados` | datas que a Portaria classifica como **feriado nacional**, mas cujo dia muda a cada ano (hoje, só a Paixão de Cristo) | `DD-MM-AAAA` | só naquele dia |
-| `## Pontos Facultativos` | dias que a Portaria define como **ponto facultativo**: Carnaval, Quarta-Feira de Cinzas, Corpus Christi, emendas, vésperas, Dia do Servidor Público e datas extraordinárias | `DD-MM-AAAA` | só naquele dia |
+| `## Feriados Fixos` | só os feriados nacionais que caem sempre no mesmo dia | `DD-MM` | todo ano |
+| `## Feriados móveis/diferenciados e pontos facultativos` | todas as datas de um ano específico, agrupadas sob `Ano de AAAA.` | `DD-MM-AAAA` | só naquele dia |
 
-A seção segue a **classificação da Portaria**, e não o fato de a data mudar de
-um ano para outro: Carnaval e Corpus Christi também mudam de data, mas a
-Portaria-TCU nº 1/2026, por exemplo, os define como ponto facultativo e a
-Paixão de Cristo como feriado nacional. As duas seções com ano têm o mesmo
-efeito no cálculo; a separação serve para conferir o arquivo contra a
-Portaria.
+A segunda seção junta duas classificações da Portaria porque, no cálculo, as
+duas têm o mesmo efeito: o dia inteiro sai do Horário TCU (a contagem 24x7 não
+muda). A classificação oficial continua existindo e é a que se confere na
+Portaria:
+
+| Classificação na Portaria | Exemplos | Onde fica no arquivo |
+|---|---|---|
+| feriado nacional de data fixa | Natal, Tiradentes, Finados | `## Feriados Fixos` |
+| feriado nacional de data variável | Paixão de Cristo (Sexta-feira da Paixão) | segunda seção |
+| ponto facultativo | Carnaval, Quarta-Feira de Cinzas, Corpus Christi, emendas, vésperas, Dia do Servidor Público, datas extraordinárias | segunda seção |
+
+Carnaval e Corpus Christi também mudam de data, mas a Portaria-TCU nº 1/2026,
+por exemplo, os define como ponto facultativo; a Paixão de Cristo é feriado
+nacional. A Páscoa cai sempre num domingo e não é cadastrada.
 
 ### Formato do arquivo (contrato de leitura)
 
@@ -796,10 +804,10 @@ das pontas, é classificada assim:
 
 | Linha (exemplo) | Como é lida |
 |---|---|
-| `## Pontos Facultativos` | título de uma das três seções; maiúsculas, acentos e espaços a mais no nome não importam |
-| `## Observações`, `### Notas` | qualquer linha que comece com `##` é título: se o nome não for uma das três seções, **erro** |
+| `## Feriados Fixos` | título de uma das seções aceitas; maiúsculas, acentos e espaços a mais no nome não importam |
+| `## Observações`, `### Notas` | qualquer linha que comece com `##` é título: se o nome não for o de uma seção aceita, **erro**; uma seção repetida também é **erro** |
 | `25-12` | feriado fixo, só em `## Feriados Fixos`; vale para o mesmo dia e mês de todos os anos |
-| `04-06-2026` | data com ano, só em `## Feriados móveis/diferenciados` ou `## Pontos Facultativos`; vale só nesse dia |
+| `04-06-2026` | data com ano, só em `## Feriados móveis/diferenciados e pontos facultativos` (ou nas duas seções do formato antigo); vale só nesse dia |
 | `Ano de 2026.`, linha vazia, frase de texto | ignorada |
 | `04-06-2026 Corpus Christi` | **ignorada sem erro**: a data fica fora do calendário sem aviso |
 | `2026.`, `04/06/2026`, `4-6-2026`, `2026-06-04` | só números e sinais, fora do formato: **erro** |
@@ -820,6 +828,31 @@ Um ano sem nenhuma data com ano cadastrada **não** dá erro: nesse ano só os
 feriados fixos saem do Horário TCU, e a Paixão de Cristo e os pontos
 facultativos contam como dias úteis. Por isso o ano novo precisa ser cadastrado
 assim que a Portaria for publicada.
+
+### Formato antigo (três seções) e ordem segura de troca
+
+No formato anterior, as datas de um ano ficavam em duas seções separadas:
+`## Feriados móveis/diferenciados` (Paixão de Cristo) e `## Pontos Facultativos`.
+Os leitores (`.m` e `tools/feriados.ps1`) **ainda aceitam esse formato**, para
+que um painel já atualizado com o `.m` novo continue funcionando enquanto o
+`feriados.txt` do SharePoint não for trocado. Os dois formatos entregam ao SQL a
+mesma lista de datas; muda só a descrição de cada data, que não entra em nenhum
+cálculo (aparece apenas no diagnóstico opcional da consulta de referência da
+Decision). Não vale misturar: um arquivo com
+`## Feriados móveis/diferenciados e pontos facultativos` **e** alguma das duas
+seções antigas é erro, assim como repetir qualquer seção.
+
+Ordem segura:
+
+1. Publicar nos repositórios os leitores que aceitam os dois formatos.
+2. A equipe responsável atualiza a consulta de cada painel (Virtual TI,
+   Decision e A2B) com o `.m` novo e confirma uma atualização bem-sucedida.
+3. Só depois, substituir o `feriados.txt` do SharePoint pelo formato de duas
+   seções.
+
+Enquanto algum painel ainda usar o `.m` anterior, o arquivo do SharePoint deve
+continuar com três seções: o leitor anterior não reconhece a seção nova, e a
+atualização desse painel falharia com "seção desconhecida".
 
 ### Onde ficam as cópias
 
@@ -842,8 +875,10 @@ não as lê, porque a consulta exige a pasta do link.
 2. Edite o `docs/feriados.txt` de um dos repositórios:
    - **Feriados Fixos:** nada a fazer; já valem para o ano novo (só muda se a
      Portaria criar um feriado nacional fixo novo);
-   - nas outras duas seções, acrescente `Ano de AAAA.` e, abaixo, as datas do
-     ano, cada uma na seção que a Portaria indicar;
+   - na seção `## Feriados móveis/diferenciados e pontos facultativos`,
+     acrescente `Ano de AAAA.` e, abaixo, todas as datas daquele ano (feriado
+     nacional de data variável e pontos facultativos juntos), de preferência
+     em ordem cronológica;
    - Portaria que altere o calendário durante o ano: incluir, corrigir ou
      apagar a data;
    - não cadastre ano futuro antes da Portaria; não apague anos anteriores
@@ -993,7 +1028,8 @@ Com a mensagem e, quando for o caso, a linha do arquivo:
   (link curto `/:t:/s/...`);
 - arquivo não encontrado na pasta do link, ou mais de um arquivo nela;
 - arquivo vazio, sem nenhuma data ou fora de UTF-8;
-- título de seção desconhecido;
+- título de seção desconhecido ou repetido, ou seções do formato novo e do
+  antigo no mesmo arquivo;
 - data fora do formato, inexistente, repetida ou na seção errada;
 - linha só com números e sinais que não seja uma data válida.
 
