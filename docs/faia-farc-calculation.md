@@ -123,6 +123,8 @@ A contagem **não começa na abertura do chamado**, e sim quando ele entra na po
 
 O calendário depende da severidade: **P1 e P2 contam corrido** (24 h por dia, incluindo fim de semana e feriado); **P3, P4 e P5 contam comercial** (segunda a sexta, 08:00 às 20:00, sem feriados nem pontos facultativos do TCU). Os feriados vêm do arquivo de feriados ([feriados.txt](feriados.txt)), e não ficam no SQL: é o calendário do TCU, o mesmo da Virtual TI e da A2B, com os feriados nacionais fixos valendo todo ano e as datas móveis e pontos facultativos cadastrados por ano, conforme a Portaria do TCU.
 
+> **Correção (2026-10-08).** O motor de status do FARC (bloco `[9.2]` do SQL) excluía o dia de feriado ou ponto facultativo também na contagem corrida, ao contrário da regra acima. Agora a corrida conta as 24 h de todos os dias, inclusive feriado e ponto facultativo; só a comercial perde fim de semana, feriado e ponto facultativo. Mudam apenas o `Tempo de Atendimento` e, quando passa da meta, o excedido, o `nHR_FARC` e o `FARC` de chamados P1/P2 com tempo ativo em feriado. As rotinas mantêm a regra própria (rotina aberta em feriado ou ponto facultativo: tempo zero).
+
 Rotinas (checklists, produção de relatórios, documentação) usam um motor próprio, que mede o intervalo da abertura até o encerramento da Decision e **desconta os períodos suspensos**. Os demais chamados usam o motor de status, que soma apenas os intervalos em que o chamado esteve realmente ativo.
 
 **Status ativos.** Conta-se só o tempo de posse da Decision nestes status:

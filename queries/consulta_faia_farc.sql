@@ -3758,11 +3758,13 @@ OUTER APPLY (
                 ini_calc = CASE WHEN d.ini_br > h.inicio_janela THEN d.ini_br ELSE h.inicio_janela END,
                 fim_calc = CASE WHEN d.fim_br < h.fim_janela    THEN d.fim_br ELSE h.fim_janela    END
         ) AS janela
-        WHERE cal.eh_feriado_ou_facultativo = 0
-          AND (
-                sl.tipo_resolucao = 'CORRIDA'
-             OR (sl.tipo_resolucao = 'COMERCIAL' AND cal.eh_dia_util = 1)
-          )
+        -- CORRIDA conta as 24h de todos os dias, inclusive feriado e ponto
+        -- facultativo; so a COMERCIAL perde fim de semana, feriado e ponto
+        -- facultativo (correcao 2026-10-08: o feriado era excluido nas duas).
+        WHERE sl.tipo_resolucao = 'CORRIDA'
+           OR (    sl.tipo_resolucao = 'COMERCIAL'
+               AND cal.eh_dia_util = 1
+               AND cal.eh_feriado_ou_facultativo = 0)
     ) AS x
 ) AS tempo
 GROUP BY b.id;

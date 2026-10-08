@@ -25447,3 +25447,25 @@ repositórios) deixou de procurar a cópia do COI; README e documentação do Po
 BI citam só os três repositórios. Onde a seção anterior fala em "cinco cópias",
 valem agora quatro. Nenhum SQL, `.m`, leitor ou cálculo mudou; o `.m` continua
 em dia com a sua fonte (`verificar_feriados.ps1`: tudo certo).
+
+## 85. 2026-10-08 — FARC: contagem corrida passa a contar feriado
+
+O motor de status do FARC (`[9.2]`, `#TempoAtendStatusLead_DEC`) aplicava
+`cal.eh_feriado_ou_facultativo = 0` a todas as contagens, inclusive à corrida
+(P1/P2), ao contrário da regra documentada ("P1 e P2 contam corrido, incluindo
+fim de semana e feriado"), do comentário do bloco de feriados e do FAIA, que
+já contava o feriado na corrida. A condição passou a ser: corrida conta as 24 h
+de todos os dias; comercial conta seg-sex 08:00-20:00 fora de feriado e ponto
+facultativo. Alterados `queries/consulta_faia_farc_painel.sql`,
+`queries/consulta_faia_farc.sql` (mesmo bloco) e o `.m` regenerado. Não mudam:
+o motor de rotina (rotina aberta em feriado continua zerada, ex.: 1678225), os
+intervalos ativos/suspensos, a posse, os marcos, metas e fatores, o FAIA.
+
+Regressão (antes x depois, mesma execução): janela do Power BI (12 meses),
+1486 chamados, só `Tempo de Atendimento` de 1666596 (+0:56:37), 1666598
+(+2:00:23), 1678046 (+0:58:03) e 1678057 (+1:07:50), FARC 0 nos quatro; 36
+meses, 3899 chamados, 9 chamados P2 corridos com diferença exatamente igual ao
+tempo ativo em feriado, dos quais 5 antigos com FARC maior (1446158, 1449952,
+1460017, 1480940, 1568833). A única outra diferença (1531508, P3 comercial)
+vem de empate de eventos de status no mesmo segundo em `[9.2]`, já existente:
+o código antigo dá 46:06:54 numa execução e 43:42:18 em outra.
