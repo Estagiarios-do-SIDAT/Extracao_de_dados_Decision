@@ -3740,14 +3740,22 @@ CREATE UNIQUE CLUSTERED INDEX IX_TempoAtendRotinaBruto_DEC_id ON #TempoAtendRoti
 -- homologacao ('Em andamento' -> 'Em homologacao'); sem ele, o status ativo
 -- anterior seguia correndo ate o terminal. So entra RE com transicao textual,
 -- para que um RE sem status nao pare o relogio.
+--
+-- Ordem dos eventos (correcao 2026-10-08): no mesmo segundo vale a precedencia
+-- de ordem_evento (linha inicial 0, SOLN 1, ST/RO/RE 2) e, dentro dela,
+-- act_log.id, a ordem de gravacao no SDM (log_id). Antes o empate ficava a
+-- criterio do SQL Server, e o mesmo chamado podia sair com tempos diferentes
+-- (ex.: 1531508, 43:42:18 ou 46:06:54). O primeiro status (PrimeiroST) usa o
+-- mesmo desempate. A tabela mudou de nome (antes #StatusEventosFARC_DEC) para
+-- nao colidir com a versao sem log_id numa sessao que ainda a tenha (Msg 207).
 --------------------------------------------------------------------------------
-IF OBJECT_ID('tempdb..#StatusEventosFARC_DEC') IS NOT NULL DROP TABLE #StatusEventosFARC_DEC;
+IF OBJECT_ID('tempdb..#StatusEventosOrdemFARC_DEC') IS NOT NULL DROP TABLE #StatusEventosOrdemFARC_DEC;
 
 ;WITH PrimeiroST AS (
     SELECT
         b.id,
         txt.texto_log,
-        ROW_NUMBER() OVER (PARTITION BY b.id ORDER BY al.system_time ASC) AS rn
+        ROW_NUMBER() OVER (PARTITION BY b.id ORDER BY al.system_time ASC, al.id ASC) AS rn
     FROM #BaseEscopoFARC_DEC AS b
     JOIN dbo.act_log AS al
         ON al.call_req_id = b.persid
@@ -3776,8 +3784,9 @@ SELECT
             THEN 0
         ELSE 1
     END AS bit) AS ativo,
-    CONVERT(tinyint, 0) AS ordem_evento
-INTO #StatusEventosFARC_DEC
+    CONVERT(tinyint, 0) AS ordem_evento,
+    CONVERT(int, 0) AS log_id -- linha inicial (unica por chamado, ordem_evento 0)
+INTO #StatusEventosOrdemFARC_DEC
 FROM #BaseEscopoFARC_DEC AS b
 LEFT JOIN PrimeiroST AS fst
     ON fst.id = b.id
@@ -3803,7 +3812,8 @@ SELECT
             THEN 1
         ELSE 0
     END AS bit) AS ativo,
-    CONVERT(tinyint, 2) AS ordem_evento
+    CONVERT(tinyint, 2) AS ordem_evento,
+    al.id AS log_id
 FROM #BaseEscopoFARC_DEC AS b
 JOIN dbo.act_log AS al
     ON al.call_req_id = b.persid
@@ -3831,7 +3841,8 @@ SELECT
     b.id,
     al.system_time AS evento_epoch,
     CAST(0 AS bit) AS ativo,
-    CONVERT(tinyint, 1) AS ordem_evento
+    CONVERT(tinyint, 1) AS ordem_evento,
+    al.id AS log_id
 FROM #BaseEscopoFARC_DEC AS b
 JOIN dbo.act_log AS al
     ON al.call_req_id = b.persid
@@ -3842,8 +3853,8 @@ WHERE al.system_time IS NOT NULL
   AND b.fechamento_decision_epoch IS NOT NULL
   AND al.system_time < b.fechamento_decision_epoch;
 
-CREATE INDEX IX_StatusEventosFARC_DEC_id_time
-    ON #StatusEventosFARC_DEC(id, evento_epoch, ordem_evento);
+CREATE INDEX IX_StatusEventosOrdemFARC_DEC_id_time
+    ON #StatusEventosOrdemFARC_DEC(id, evento_epoch, ordem_evento, log_id);
 
 IF OBJECT_ID('tempdb..#IntervalosStatusFARC_DEC') IS NOT NULL DROP TABLE #IntervalosStatusFARC_DEC;
 
@@ -3853,10 +3864,10 @@ IF OBJECT_ID('tempdb..#IntervalosStatusFARC_DEC') IS NOT NULL DROP TABLE #Interv
         s.evento_epoch AS ini_epoch,
         LEAD(s.evento_epoch) OVER (
             PARTITION BY s.id
-            ORDER BY s.evento_epoch, s.ordem_evento
+            ORDER BY s.evento_epoch, s.ordem_evento, s.log_id
         ) AS prox_epoch,
         s.ativo
-    FROM #StatusEventosFARC_DEC AS s
+    FROM #StatusEventosOrdemFARC_DEC AS s
 ),
 Cortado AS (
     SELECT
@@ -3911,7 +3922,7 @@ CREATE INDEX IX_IntervalosStatusFARC_DEC_id
 --
 -- O QUE ESTE BLOCO FAZ
 --   Materializa os intervalos INATIVOS do FARC - exatamente o complemento dos
---   intervalos que [9.2] ja usa como ativos, vindos do mesmo #StatusEventosFARC_DEC
+--   intervalos que [9.2] ja usa como ativos, vindos do mesmo #StatusEventosOrdemFARC_DEC
 --   e ja cortados no mesmo terminal. Nao ha regra de status nova: a classificacao
 --   ativo/inativo continua sendo a do proprio FARC.
 --
@@ -3931,10 +3942,10 @@ IF OBJECT_ID('tempdb..#IntervalosInativosFARC_DEC') IS NOT NULL DROP TABLE #Inte
         s.evento_epoch AS ini_epoch,
         LEAD(s.evento_epoch) OVER (
             PARTITION BY s.id
-            ORDER BY s.evento_epoch, s.ordem_evento
+            ORDER BY s.evento_epoch, s.ordem_evento, s.log_id
         ) AS prox_epoch,
         s.ativo
-    FROM #StatusEventosFARC_DEC AS s
+    FROM #StatusEventosOrdemFARC_DEC AS s
 ),
 Cortado AS (
     SELECT
@@ -4455,7 +4466,7 @@ SELECT
     -- As estruturas internas que produzem esses marcos NAO foram removidas:
     -- data_abertura_br, data_captura_br e fechamento_decision_epoch continuam
     -- alimentando #TerminalFARC_DEC, #TempoAtendRotina_DEC,
-    -- #StatusEventosFARC_DEC e #TempoAtendStatusLead_DEC, ou seja, o Tempo de
+    -- #StatusEventosOrdemFARC_DEC e #TempoAtendStatusLead_DEC, ou seja, o Tempo de
     -- Atendimento, o excedente, o nHR_FARC e o FARC seguem intactos.
     --
     -- [Data Resolução] PERMANECE: e o call_req.resolve_date, um marco proprio do

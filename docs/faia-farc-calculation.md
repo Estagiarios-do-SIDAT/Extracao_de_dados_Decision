@@ -167,6 +167,8 @@ O resultado é `Tempo de Atendimento` 0:51:05 → 0:51:22 e `Tempo Total Decisio
 
 O `Indicador Reabertura` continua só indicando que houve reabertura; não soma tempo.
 
+**Eventos no mesmo segundo.** O SDM grava a hora em segundos, e às vezes dois eventos de status do mesmo chamado caem no mesmo segundo. O caso típico é a rotina automática que tira o chamado de "Agendado": "Agendado" → "Em andamento" e, logo em seguida, "Em andamento" → "Aguarda atendimento". Desde 2026-10-08, o motor de status do FARC ordena esses eventos pelo `id` do `act_log`, que é a ordem de gravação no SDM e bate com a sequência de status (o destino de um é a origem do seguinte), depois da precedência que já existia (`SOLN` antes de `ST`/`RO`/`RE`). Assim o "Em andamento" intermediário dura zero segundo, e o mesmo chamado sai sempre com o mesmo tempo. Antes, o empate ficava a critério do SQL Server: o 1531508 saiu com 43:42:18 numa execução e 46:06:54 em outra. A regra vale também para a escolha do primeiro status depois do início da contagem.
+
 ---
 
 ## 5. Os três tempos que mais confundem

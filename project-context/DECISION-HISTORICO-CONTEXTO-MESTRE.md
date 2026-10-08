@@ -25469,3 +25469,36 @@ tempo ativo em feriado, dos quais 5 antigos com FARC maior (1446158, 1449952,
 1460017, 1480940, 1568833). A única outra diferença (1531508, P3 comercial)
 vem de empate de eventos de status no mesmo segundo em `[9.2]`, já existente:
 o código antigo dá 46:06:54 numa execução e 43:42:18 em outra.
+
+## 86. 2026-10-08 — FARC: ordem dos eventos de status no mesmo segundo
+
+Problema: no motor de status do FARC (`[9.2]` e `[9.2.1]`), o `LEAD` que monta
+os intervalos ativos e inativos ordenava por `evento_epoch, ordem_evento`, e o
+`ROW_NUMBER` do primeiro status (`PrimeiroST`) só por `system_time`. Dois
+eventos `ST` no mesmo segundo ficavam na ordem que o SQL Server escolhesse; o
+1531508 saiu com 43:42:18 numa execução e 46:06:54 em outra (o empate de
+29/07/2024 16:01:07 invertido soma 8676 s), e o 1691109 poderia ir de FARC
+0,00 para 21,48.
+
+Evidência para o critério: `act_log.id` (int, chave primária, atribuído pelo
+SDM) nunca recua no `system_time` em 66 317 eventos de 36 meses, e em 202 dos
+203 grupos de eventos de status no mesmo segundo a ordem por `id` é a única que
+fecha a cadeia de status (o grupo restante, 1618407, é inconsistente no próprio
+SDM e não afeta o FARC). Os empates vêm da rotina "Sesuc Automação": ST para
+"Em andamento", SLARESUME do SDM e ST para "Aguarda atendimento".
+`time_stamp` (editável) e `last_mod_dt` (muda em edições) não servem.
+
+Correção: a tabela passou a `#StatusEventosOrdemFARC_DEC` (nome novo, para não
+colidir com a versão sem a coluna numa sessão que ainda a tenha; Msg 207), com
+a coluna `log_id` (`act_log.id`; 0 na linha inicial sintética, única por
+chamado); os dois `LEAD` ordenam por `evento_epoch, ordem_evento, log_id` e o
+`PrimeiroST` por `system_time, id`. A precedência existente (linha inicial,
+`SOLN`, `ST`/`RO`/`RE`) foi mantida. O FAIA não mudou: a ordem alfabética do
+destino no `[8.4]` não tem efeito numérico hoje ("Aguarda atendimento" também é
+ativo no FAIA).
+
+Regressão (antes x depois, SQL oficial): 12 meses (08/10/2025 a 08/10/2026),
+1486 chamados, e 36 meses (08/10/2023 a 08/10/2026), 3899 chamados: 0
+diferenças. Os 10 chamados com empate na janela do Power BI ficam com os valores
+da ordem por `id` (1531508 = 43:42:18, 1647733 = 0:01:19, 1691109 = 0:38:28 e
+FARC 0,00), iguais em execuções repetidas e em janelas diferentes.
