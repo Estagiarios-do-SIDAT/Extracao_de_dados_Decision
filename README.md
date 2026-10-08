@@ -87,7 +87,7 @@ A Decision tem **duas** consultas, com a mesma regra de cálculo e finalidades d
 | [`queries/consulta_faia_farc.sql`](queries/consulta_faia_farc.sql) | Execução e análise pontual. É a **referência funcional** | Digitado à mão |
 | [`queries/consulta_faia_farc_painel.sql`](queries/consulta_faia_farc_painel.sql) | Consulta de referência do painel: o SQL que a consulta do Power BI executa. Fonte do `.m` e usada em testes | **Automático** |
 
-A **única** consulta do Power BI é [`powerbi/consulta_faia_farc_power_bi.m`](powerbi/consulta_faia_farc_power_bi.m), gerada de `queries/consulta_faia_farc_painel.sql` pelo `tools/gerar_powerbi_m.ps1`. O SQL não se cola no Power BI. Para trocar o endereço do SharePoint, altere apenas `SharePointFeriadosUrl`, no topo do `.m` (link real ainda **pendente**).
+A **única** consulta do Power BI é [`powerbi/consulta_faia_farc_power_bi.m`](powerbi/consulta_faia_farc_power_bi.m), gerada de `queries/consulta_faia_farc_painel.sql` pelo `tools/gerar_powerbi_m.ps1`. O SQL não se cola no Power BI. O `.m` lê o `feriados.txt` pelo conector `SharePoint.Files` (Conta organizacional, site fixo). A única configuração é `SharePointFeriadosLink`, no topo do `.m`: o link do arquivo copiado do SharePoint, de onde saem a pasta e o nome.
 
 A versão do Power BI carrega sempre os **últimos 12 meses até hoje**, pela data de encerramento do chamado. Não há data para editar: a janela é recalculada a cada atualização do painel. Para aumentar ou reduzir a cobertura, altera-se um único número — `@CoberturaMeses`, na primeira instrução do SQL. O passo a passo, inclusive para atualizar feriados, está em [`powerbi/powerbi-query.md`](powerbi/powerbi-query.md#5-período-da-consulta).
 
