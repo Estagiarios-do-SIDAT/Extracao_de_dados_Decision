@@ -688,6 +688,13 @@ O que entra em cada tipo:
 - ponto facultativo de **meio expediente**, se algum dia houver, precisa de
   decisão antes de ser cadastrado: o arquivo só representa o dia inteiro.
 
+A seção segue a classificação da Portaria (feriado nacional ou ponto
+facultativo), e não o fato de a data mudar a cada ano. Carnaval, Quarta-Feira de
+Cinzas e Corpus Christi também mudam de data, mas a Portaria os define como
+ponto facultativo: ficam em `## Pontos Facultativos`. As duas seções com ano têm
+o mesmo efeito no cálculo. A Páscoa cai sempre num domingo e não precisa de
+cadastro.
+
 **Como fazer.** Sem mexer no SQL nem republicar o relatório:
 
 1. Abra o `feriados.txt` no SharePoint.
@@ -758,6 +765,51 @@ o painel lê. Mantenha as duas iguais, e também as cópias dos outros
 repositórios e de `Documentos e Relatórios/feriados.txt`; o
 `tools/verificar_feriados.ps1` confere.
 
+**Do arquivo às datas (contrato de leitura).** As regras completas estão no
+próprio `feriados.txt`, na parte *Formato obrigatório do arquivo para Power
+Query e validadores*. O `.m` e o `tools/feriados.ps1` aplicam as mesmas regras
+e dão o mesmo resultado para o mesmo arquivo:
+
+1. O `.m` baixa o arquivo com `Web.Contents(SharePointFeriadosUrl)` e o lê como
+   texto UTF-8 (com ou sem BOM). UTF-16, ou bytes que não sejam UTF-8 válido
+   (um arquivo ANSI com acentos, por exemplo), interrompem a atualização. As
+   linhas podem terminar em CRLF ou LF.
+2. Cada linha, sem os espaços das pontas, é classificada:
+
+| Linha (exemplo) | Como é lida |
+|---|---|
+| `## Pontos Facultativos` | título de uma das três seções; maiúsculas, acentos e espaços a mais no nome não importam |
+| `## Observações`, `### Notas` | qualquer linha que comece com `##` é título: se o nome não for uma das três seções, **erro** |
+| `25-12` | feriado fixo, só em `## Feriados Fixos`; vale para o mesmo dia e mês de todos os anos |
+| `04-06-2026` | data com ano, só em `## Feriados móveis/diferenciados` ou `## Pontos Facultativos`; vale só nesse dia |
+| `Ano de 2026.`, linha vazia, parágrafo de texto | ignorada |
+| `04-06-2026 Corpus Christi` | **ignorada sem erro**: a data fica fora do calendário |
+| `2026.`, `04/06/2026`, `4-6-2026`, `2026-06-04` | só números e sinais, mas fora do formato: **erro** |
+| `31-04-2026`; data repetida, mesmo em outra seção; data na seção errada | **erro** |
+
+3. Qualquer erro, ou um arquivo sem nenhuma data, faz a etapa `Fonte` falhar
+   com a mensagem `Feriados: ...` e o número de cada linha com problema. O SQL
+   nem chega a ser executado.
+4. Sem erro, a lista vai ao SQL no parâmetro `@Feriados`, em JSON (`DD-MM` →
+   `MM-DD`, `DD-MM-AAAA` → `AAAA-MM-DD`). O SQL confere o formato de novo e
+   monta duas listas: os dias e meses que valem todo ano e as datas que valem
+   só uma vez.
+5. No cálculo, cada dia de uma das duas listas fica inteiro fora do Horário TCU.
+   A contagem 24x7 soma todas as horas, inclusive fins de semana e feriados,
+   então o calendário não a altera.
+
+Um ano sem nenhuma data com ano cadastrada **não** dá erro: nesse ano só os
+feriados fixos saem do Horário TCU, e a Paixão de Cristo e os pontos
+facultativos contam como dias úteis. Por isso o ano novo precisa ser
+cadastrado assim que a Portaria for publicada.
+
+O arquivo é lido de novo a cada atualização do conjunto de dados (manual no
+Desktop ou agendada no serviço). Para valer um calendário novo, basta salvar o
+`feriados.txt` no SharePoint e atualizar: o SQL, o `.m` e o relatório
+publicado não mudam.
+
+Onde o calendário pesa neste projeto: P3, P4 e P5 contam no Horário TCU e perdem os dias cadastrados; P1 e P2 contam corrido (24x7) e não mudam. Na Decision, o calendário também pesa no início da contagem de chamados abertos em feriado, nas rotinas e no tempo suspenso do FARC (seção 13, *Atualizar feriados e pontos facultativos*).
+
 **Onde trocar o link.** Para trocar o endereço do SharePoint, altere apenas
 `SharePointFeriadosUrl`. É a primeira linha depois de `let` no `.m`, dentro do
 bloco `CONFIGURACAO - SHAREPOINT`; o endereço não aparece em nenhum outro lugar
@@ -802,7 +854,9 @@ a linha do arquivo): link não preenchido; arquivo inacessível (ex.: 404);
 arquivo vazio ou fora de UTF-8; data inexistente (`31-02-2026`); linha que
 parece data fora do formato (`2026-04-03`, `3-4-2026`); data repetida; data
 fora da seção certa; seção diferente das três do arquivo; arquivo sem nenhuma
-data. O relatório nunca é calculado com zero feriados.
+data. O relatório nunca é calculado com zero feriados. Atenção: uma data com
+texto na mesma linha **não** interrompe a atualização; ela é ignorada (tabela
+acima).
 
 **Primeiro refresh (checklist).**
 
