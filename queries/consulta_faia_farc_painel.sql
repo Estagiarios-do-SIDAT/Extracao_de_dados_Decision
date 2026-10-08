@@ -4064,7 +4064,7 @@ CREATE UNIQUE CLUSTERED INDEX IX_ParSolnSrvyFARC_DEC_id ON #ParSolnSrvyFARC_DEC(
 -- COLUNAS DEDUPLICADAS (mesma informacao nos dois lados; ficou a do FAIA):
 --   SDM, Tipo Chamado, Severidade, Status, Categoria, Responsavel Abertura,
 --   Responsavel Atendimento, Resumo, Indicador Reabertura, Acordo Prazo,
---   Acordo Qualidade, Justificativa, Tempo Total Decision, Tempo suspenso.
+--   Acordo Qualidade, Justificativa, Tempo Total Decision, Tempo Suspenso.
 --
 -- DEDUPLICACAO DAS DATAS (revisao 2026-07-29)
 --   A versao anterior preservava tres colunas de data do lado FARC com nome
@@ -4205,7 +4205,7 @@ SELECT
         CONVERT(varchar(30), cf.susp_seg / 3600), N':',
         RIGHT(N'00' + CONVERT(varchar(2), (cf.susp_seg % 3600) / 60), 2), N':',
         RIGHT(N'00' + CONVERT(varchar(2), cf.susp_seg % 60), 2)
-    ) END AS [Tempo suspenso],
+    ) END AS [Tempo Suspenso],
 
     cf.data_captura_br AS [Data Captura],
 

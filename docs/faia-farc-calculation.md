@@ -114,7 +114,7 @@ A contagem **não começa na abertura do chamado**, e sim quando ele entra na po
 | Coluna | O que é |
 |---|---|
 | `Tempo Total Decision` | Tempo trabalhado, líquido |
-| `Tempo suspenso` | Tempo em que o relógio ficou parado |
+| `Tempo Suspenso` | Tempo em que o relógio ficou parado |
 | `Tempo de Atendimento` | Base de tempo do FARC |
 | `Tempo Atendimento Excedido` | Quanto passou da meta |
 | `Meta Atendimento` | `Atende` ou `Não Atende` |
@@ -174,7 +174,7 @@ São três colunas parecidas e **não intercambiáveis**:
 | Coluna | O que mede | Conta o intervalo SOLN → SRVY_SENT? |
 |---|---|---|
 | `Tempo Total Decision` | Tempo trabalhado, já descontado o que ficou parado | **Não** |
-| `Tempo suspenso` | Tempo com o relógio parado | **Sim** |
+| `Tempo Suspenso` | Tempo com o relógio parado | **Sim** |
 | `Tempo de Atendimento` | Base usada para comparar com a meta do FARC | **Sim** (a partir desta versão) |
 
 `Tempo Total Decision` continua **sem** considerar esse intervalo — isso não mudou e não deve mudar.
@@ -185,7 +185,7 @@ São três colunas parecidas e **não intercambiáveis**:
 
 Quando o atendente registra a solução, o SDM grava um evento **`SOLN`**. Logo depois, o sistema dispara a pesquisa de satisfação e grava um **`SRVY_SENT`**. Entre os dois passam alguns segundos.
 
-O problema: o marco de encerramento do FARC é o **próprio `SOLN`** (o do último ciclo, quando há reabertura). Ou seja, o envio da pesquisa acontece **depois** do fim da janela medida, e por isso esses segundos não entravam no `Tempo de Atendimento` — embora já entrassem no `Tempo suspenso`.
+O problema: o marco de encerramento do FARC é o **próprio `SOLN`** (o do último ciclo, quando há reabertura). Ou seja, o envio da pesquisa acontece **depois** do fim da janela medida, e por isso esses segundos não entravam no `Tempo de Atendimento` — embora já entrassem no `Tempo Suspenso`.
 
 A partir desta versão:
 
@@ -199,7 +199,7 @@ Tempo de Atendimento anterior
 
 **Quando não há par válido, soma-se zero.** É o caso, por exemplo, de chamados encerrados sem `SOLN`, ou sem pesquisa enviada. O chamado não é excluído nem recebe valor estimado: simplesmente não ganha nada.
 
-**Como a dupla contagem é evitada.** O pareamento segue exatamente a mesma regra que já alimentava o `Tempo suspenso`:
+**Como a dupla contagem é evitada.** O pareamento segue exatamente a mesma regra que já alimentava o `Tempo Suspenso`:
 
 - cada `SOLN` é considerado uma única vez;
 - para cada `SOLN`, vale apenas o **primeiro** `SRVY_SENT` posterior a ele;
@@ -224,7 +224,7 @@ Os marcos abaixo vêm do log de eventos do próprio chamado, em
 | Data de Encerramento Decision (`SOLN`) | 01/06/2026 10:28:30 |
 | Envio da pesquisa (`SRVY_SENT`) | 01/06/2026 10:28:33 |
 | Intervalo entre os dois | **3 segundos** |
-| `Tempo suspenso` | 0:00:03 |
+| `Tempo Suspenso` | 0:00:03 |
 
 O chamado tem um único `SOLN` e um único `SRVY_SENT`, então existe exatamente um par válido.
 
@@ -245,7 +245,7 @@ A correção foi isolada de propósito. Só o `Tempo de Atendimento` mudou.
 Continuam **exatamente iguais**:
 
 ```text
-Tempo suspenso
+Tempo Suspenso
 Tempo Total Decision
 Tempo Atendimento Excedido
 Meta Atendimento
@@ -309,7 +309,7 @@ A correção do fallback mexe **apenas** nesta coluna. Continuam idênticos:
 
 ```text
 Tempo Total Decision
-Tempo suspenso
+Tempo Suspenso
 Tempo Primeiro Atendimento
 Tempo de Atendimento
 FAIA

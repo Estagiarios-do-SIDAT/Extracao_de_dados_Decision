@@ -274,7 +274,7 @@ As 31 colunas, na ordem em que saem:
 | 12 | `Data de Encerramento Total do Chamado` | compartilhada |
 | 13 | `Data de Encerramento Decision` | compartilhada — ver [seção 8](#8-data-de-encerramento-decision) |
 | 14 | `Tempo Total Decision` | compartilhada |
-| 15 | `Tempo suspenso` | compartilhada |
+| 15 | `Tempo Suspenso` | compartilhada |
 | 16 | `Data Captura` | FAIA |
 | 17 | `Tempo Primeiro Atendimento` | FAIA |
 | 18 | `Primeiro Atendimento Excedido` | FAIA |
